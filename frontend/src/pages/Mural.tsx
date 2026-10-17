@@ -45,24 +45,27 @@ export default function Mural() {
   const { data: postagens } = useQuery({
     queryKey: ['mural', 'postagens'],
     queryFn: async () => {
-      const { data } = await api.get<Postagem[]>('/api/engajamento/postagens');
-      return data;
+      // Backend retorna Page<PostagemMural> — extraímos o array de content
+      const { data } = await api.get<{ content: Postagem[] }>('/api/engajamento/postagens');
+      return data.content ?? [];
     },
   });
 
   const { data: enquetes } = useQuery({
     queryKey: ['mural', 'enquetes'],
     queryFn: async () => {
-      const { data } = await api.get<Enquete[]>('/api/engajamento/enquetes');
-      return data;
+      // Backend retorna Page<EnqueteMural> — extraímos o array de content
+      const { data } = await api.get<{ content: Enquete[] }>('/api/engajamento/enquetes');
+      return data.content ?? [];
     },
   });
 
   const { data: reconhecimentos } = useQuery({
     queryKey: ['mural', 'reconhecimentos'],
     queryFn: async () => {
-      const { data } = await api.get<Reconhecimento[]>('/api/engajamento/reconhecimentos');
-      return data;
+      // Backend retorna Page<ReconhecimentoColaborador> — extraímos o array de content
+      const { data } = await api.get<{ content: Reconhecimento[] }>('/api/engajamento/reconhecimentos');
+      return data.content ?? [];
     },
   });
 

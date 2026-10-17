@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.callcenter.modulorh.application.service.BeneficioService;
+import br.com.callcenter.modulorh.api.dto.FuncionarioBeneficioResponseDTO;
 import br.com.callcenter.modulorh.domain.entity.Beneficio;
 import br.com.callcenter.modulorh.domain.entity.FuncionarioBeneficio;
 import io.swagger.v3.oas.annotations.Operation;
@@ -87,6 +88,12 @@ public class BeneficioController {
 
         return ResponseEntity.ok(beneficioService.adicionarBeneficioAFuncionario(
                 funcionarioId, beneficioId, dataInicio, dataFim));
+    }
+
+    @GetMapping("/funcionarios")
+    @Operation(summary = "Listar todos os benefícios alocados a funcionários (DTO achatado)")
+    public ResponseEntity<List<FuncionarioBeneficioResponseDTO>> listarTodosFuncionariosBeneficios() {
+        return ResponseEntity.ok(beneficioService.listarTodosFuncionariosBeneficios());
     }
 
     @GetMapping("/funcionarios/{funcionarioId}")

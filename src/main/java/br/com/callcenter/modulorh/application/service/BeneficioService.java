@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.callcenter.modulorh.api.dto.FuncionarioBeneficioResponseDTO;
 import br.com.callcenter.modulorh.domain.entity.Beneficio;
 import br.com.callcenter.modulorh.domain.entity.Funcionario;
 import br.com.callcenter.modulorh.domain.entity.FuncionarioBeneficio;
@@ -142,6 +143,47 @@ public class BeneficioService {
                 .orElseThrow(() -> new RuntimeException("Funcionário não encontrado com ID: " + funcionarioId));
 
         return funcionarioBeneficioRepository.findByFuncionarioIdAndAtivoTrue(funcionarioId);
+    }
+
+    /**
+     * Lista todas as associações ativo/benefício de todos os funcionários,
+     * convertido em DTOs achatados para consumo da tela de Benefícios do frontend.
+     */
+    public List<FuncionarioBeneficioResponseDTO> listarTodosFuncionariosBeneficios() {
+        return funcionarioBeneficioRepository.findAll().stream()
+                .map(this::paraResponseDTO)
+                .toList();
+    }
+
+    private FuncionarioBeneficioResponseDTO paraResponseDTO(FuncionarioBeneficio fb) {
+        FuncionarioBeneficioResponseDTO dto = new FuncionarioBeneficioResponseDTO();
+        dto.setId(fb.getId());
+        if (fb.getFuncionario() != null) {
+            dto.setFuncionarioId(fb.getFuncionario().getId());
+            dto.setFuncionarioNome(fb.getFuncionario().getNome());
+        }
+        if (fb.getBeneficio() != null) {
+            dto.setBeneficioId(fb.getBeneficio().getId());
+            dto.setBeneficioNome(fb.getBeneficio().getNome());
+            dto.setBeneficioTipo(fb.getBeneficio().getTipo());
+            dto.setBeneficioTipoCobranca(fb.getBeneficio().getTipoCobranca());
+        }
+        dto.setDataInicio(fb.getDataInicio());
+        dto.setDataFim(fb.getDataFim());
+        dto.setValorFuncionario(fb.getValorFuncionario());
+        dto.setValorEmpresa(fb.getValorEmpresa());
+        dto.setValorTotal(somar(fb.getValorFuncionario(), fb.getValorEmpresa()));
+        dto.setAtivo(fb.getAtivo());
+        dto.setDataCriacao(fb.getDataCriacao());
+        dto.setDataAtualizacao(fb.getDataAtualizacao());
+        return dto;
+    }
+
+    private BigDecimal somar(BigDecimal a, BigDecimal b) {
+        BigDecimal r = BigDecimal.ZERO;
+        if (a != null) r = r.add(a);
+        if (b != null) r = r.add(b);
+        return r;
     }
 
     @Transactional

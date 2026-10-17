@@ -276,3 +276,194 @@ export function useUpdateFerias() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ferias'] }),
   });
 }
+
+// ── Ponto Eletrônico ────────────────────────────────────
+
+export function useRegistrosPonto(funcionarioId: string | undefined, inicio: string, fim: string) {
+  return useQuery<any[]>({
+    queryKey: ['ponto', funcionarioId, inicio, fim],
+    queryFn: async () => {
+      const { data } = await api.get(`/rh/ponto/funcionario/${funcionarioId}?inicio=${inicio}&fim=${fim}`);
+      return data;
+    },
+    enabled: !!funcionarioId,
+  });
+}
+
+export function useCalcularHorasPonto(funcionarioId: string | undefined, inicio: string, fim: string) {
+  return useQuery<{ horasNormais: number; horasExtras: number; totalHoras: number }>({
+    queryKey: ['pontoHoras', funcionarioId, inicio, fim],
+    queryFn: async () => {
+      const { data } = await api.get(`/rh/ponto/funcionario/${funcionarioId}/calcular-horas?inicio=${inicio}&fim=${fim}`);
+      return data;
+    },
+    enabled: !!funcionarioId,
+  });
+}
+
+export function useRegistrarEntrada() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ funcionarioId, data }: { funcionarioId: string; data: string }) => {
+      const res = await api.post(`/rh/ponto/entrada?funcionarioId=${funcionarioId}&data=${data}`);
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ponto'] }),
+  });
+}
+
+export function useRegistrarSaida() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ funcionarioId, data }: { funcionarioId: string; data: string }) => {
+      const res = await api.post(`/rh/ponto/saida?funcionarioId=${funcionarioId}&data=${data}`);
+      return res.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ponto'] }),
+  });
+}
+
+export function useSalvarPontoCompleto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await api.post('/rh/ponto', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ponto'] }),
+  });
+}
+
+// ── Escalas ─────────────────────────────────────────────
+
+export function useEscalas() {
+  return useQuery<any[]>({
+    queryKey: ['escalas'],
+    queryFn: async () => {
+      const { data } = await api.get('/rh/escalas');
+      return data;
+    },
+  });
+}
+
+export function useCriarEscala() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await api.post('/rh/escalas', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['escalas'] }),
+  });
+}
+
+export function useAtualizarEscala() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string } & any) => {
+      const { data } = await api.put(`/rh/escalas/${id}`, body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['escalas'] }),
+  });
+}
+
+export function useDeletarEscala() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/rh/escalas/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['escalas'] }),
+  });
+}
+
+// ── Admissões ───────────────────────────────────────────
+
+export function useAdmissoes() {
+  return useQuery<any[]>({
+    queryKey: ['admissoes'],
+    queryFn: async () => {
+      const { data } = await api.get('/rh/admissoes');
+      return data;
+    },
+  });
+}
+
+export function useCriarAdmissao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await api.post('/rh/admissoes', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admissoes'] }),
+  });
+}
+
+export function useAtualizarAdmissao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string } & any) => {
+      const { data } = await api.put(`/rh/admissoes/${id}`, body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admissoes'] }),
+  });
+}
+
+export function useConcluirAdmissao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post(`/rh/admissoes/${id}/concluir`);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admissoes'] }),
+  });
+}
+
+// ── Demissões ───────────────────────────────────────────
+
+export function useDemissoes() {
+  return useQuery<any[]>({
+    queryKey: ['demissoes'],
+    queryFn: async () => {
+      const { data } = await api.get('/rh/demissoes');
+      return data;
+    },
+  });
+}
+
+export function useCriarDemissao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: any) => {
+      const { data } = await api.post('/rh/demissoes', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['demissoes'] }),
+  });
+}
+
+export function useCalcularRescisao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post(`/rh/demissoes/${id}/calcular-rescisao`);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['demissoes'] }),
+  });
+}
+
+export function useFinalizarDemissao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post(`/rh/demissoes/${id}/finalizar`);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['demissoes'] }),
+  });
+}

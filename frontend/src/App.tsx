@@ -6,17 +6,21 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ToastProvider } from './components/Toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { QueryProvider } from './hooks/useApi';
+import { AdmissoesDemissoes } from './pages/AdmissoesDemissoes';
 import Avaliacoes from './pages/Avaliacoes';
 import Beneficios from './pages/Beneficios';
+import { Escalas } from './pages/Escalas';
 import Cargos from './pages/Cargos';
 import DashboardPage from './pages/Dashboard';
 import Departamentos from './pages/Departamentos';
+import Documentos from './pages/Documentos';
 import { Ferias } from './pages/Ferias';
 import { FluxoCaixa } from './pages/FluxoCaixa';
 import { FuncionariosPage } from './pages/Funcionarios';
 import { Holerites } from './pages/Holerites';
 import { LoginPage } from './pages/LoginPage';
 import Mural from './pages/Mural';
+import { Ponto } from './pages/Ponto';
 import SettingsPage from './pages/Settings';
 import { VendasPage } from './pages/Vendas';
 
@@ -136,6 +140,46 @@ function App() {
                     <ProtectedRoute requiredLevel="rh">
                       <Layout>
                         <Beneficios />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/documentos"
+                  element={
+                    <ProtectedRoute requiredLevel="rh">
+                      <Layout>
+                        <Documentos />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ponto"
+                  element={
+                    <ProtectedRoute requiredLevel="supervisor">
+                      <Layout>
+                        <Ponto />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/escalas"
+                  element={
+                    <ProtectedRoute requiredLevel="supervisor">
+                      <Layout>
+                        <Escalas />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admissoes-demissoes"
+                  element={
+                    <ProtectedRoute requiredLevel="rh">
+                      <Layout>
+                        <AdmissoesDemissoes />
                       </Layout>
                     </ProtectedRoute>
                   }

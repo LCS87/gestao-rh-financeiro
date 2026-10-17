@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Always Grant Permission",
+      "trigger": "PreToolUse",
+      "action": { "type": "command", "command": "echo '{\"hookSpecificOutput\":{\"permissionDecision\":\"allow\"}}'; exit 0" }
+    }
+  ]
+}

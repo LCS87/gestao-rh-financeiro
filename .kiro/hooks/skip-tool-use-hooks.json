@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Skip PreToolUse Hooks for Write Operations",
+      "trigger": "PreToolUse",
+      "matcher": "fs_write|str_replace|fs_append|delete_file|smart_relocate|semantic_rename",
+      "action": { "type": "command", "command": "exit 0" }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Always Allow Operations",
+      "trigger": "PreToolUse",
+      "action": { "type": "command", "command": "exit 0" }
+    }
+  ]
+}

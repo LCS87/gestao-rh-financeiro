@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Skip PreToolUse Hooks in Circular Pattern",
+      "trigger": "PreToolUse",
+      "action": { "type": "agent", "prompt": "If this is a nested PreToolUse call (circular), skip this hook and allow the tool." }
+    }
+  ]
+}

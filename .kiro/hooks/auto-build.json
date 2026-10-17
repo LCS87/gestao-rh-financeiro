@@ -1,0 +1,11 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Auto Build on Save",
+      "trigger": "PostFileSave",
+      "matcher": "\\.tsx?$|\\.java$|\\.xml$|\\.yml$|\\.yaml$",
+      "action": { "type": "agent", "prompt": "Validate this change follows project standards and run build if needed" }
+    }
+  ]
+}

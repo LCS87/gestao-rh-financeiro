@@ -33,7 +33,7 @@ br.com.callcenter/
 
 Dentro de cada package, a organização segue camadas **API (Controller) → Application (Service) → Domain (Entidades/regras) → Infrastructure (Repositories)**, sem fronteiras físicas de módulo Maven.
 
-> ⚠️ *Planejado vs real*: módulos separados (ex.: `modulo-notificacoes`, `modulo-dashboard`) e RabbitMQ como mensageria **não existem no código** — documentos ficam dentro de `modulorh` e o RabbitMQ roda apenas no docker-compose sem producer/consumer. Ver seção "Pendências".
+> ⚠️ *Planejado vs real*: módulos separados (ex.: `modulo-notificacoes`, `modulo-dashboard`) e RabbitMQ como mensageria **não existem no código** — documentos ficam dentro de `modulorh` e o RabbitMQ foi removido na Fase 5 (não havia producer/consumer no código).
 
 ## 🛠️ Tecnologias
 
@@ -58,7 +58,7 @@ Dentro de cada package, a organização segue camadas **API (Controller) → App
 - **Lucide React** (ícones)
 
 ### Infraestrutura
-- **Docker & Docker Compose** (apenas infra: Postgres, Redis, RabbitMQ — Dockerfile da aplicação ainda pendente)
+- **Docker & Docker Compose** (infra + app: Postgres, Redis, backend via Dockerfile multi-stage, frontend via Nginx)
 - ~~Nginx / Prometheus / Grafana~~ (planejados, **não implementados**)
 
 ## 🚀 Como Executar
@@ -86,7 +86,6 @@ docker-compose up -d
 Isso irá iniciar:
 - PostgreSQL (porta 5432)
 - Redis (porta 6379)
-- RabbitMQ (porta 5672) + Management UI (porta 15672)
 
 3. **Configure as variáveis de ambiente** (opcional)
 
@@ -97,8 +96,6 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 REDIS_HOST=localhost
 REDIS_PORT=6379
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
 JWT_SECRET=your-secret-key-minimum-32-characters
 JASYPT_PASSWORD=your-jasypt-password
 SPRING_PROFILES_ACTIVE=dev
@@ -369,7 +366,7 @@ Para dúvidas ou suporte, entre em contato com a equipe de desenvolvimento.
 - **Autorização**: RBAC com roles (ADMIN, RH, FINANCEIRO, etc.)
 - **Segurança**: Jasypt para dados sensíveis
 - **Cache**: Redis para performance (uso atual: `@Cacheable` em parâmetros de sistema)
-- **Mensageria**: RabbitMQ disponível no docker-compose ⚠️ *sem producer/consumer implementados no código (decisão pendente: integrar ou remover)*
+- **Mensageria**: RabbitMQ **removido** na Fase 5 (dependência amqp e serviço do compose eliminados — não havia produtor/consumidor; readicionar quando houver NotificationService assíncrono)
 - **Agendamento**: Tarefas automáticas com @Scheduled
 - **Relatórios**: JasperReports para PDFs
 - **Documentação**: OpenAPI/Swagger integrado
@@ -403,7 +400,7 @@ Para dúvidas ou suporte, entre em contato com a equipe de desenvolvimento.
 2. **Testes**: Testcontainers (integração), Vitest + RTL (frontend); cobertura atual abaixo da meta de 70%.
 3. **Qualidade estática**: PMD/SpotBugs comentados no pom.xml; Checkstyle configurado mas não integrado ao build.
 4. **Dead code**: `test.py` e `auth-design-placeholder.ipynb` ainda presentes na raiz.
-5. **RabbitMQ**: decidir integrar (notificações/metas) ou remover do compose.
+5. ~~**RabbitMQ**~~: decisão tomada na Fase 5 — **removido** (sem producer/consumer no código).
 6. **Placeholders restantes**: alguns indicadores de analytics ainda estimados.
 7. **Backlog call center**: WebSocket (metas/documentos a vencer), pausas NR-17, exportação AFD/AFDT (Portaria 671), vinculação em lote de escalas, conclusão do módulo de avaliação de desempenho.
 8. **docs/ROADMAP.md**: desatualizado — precisa ser reconciliado com o status real acima.

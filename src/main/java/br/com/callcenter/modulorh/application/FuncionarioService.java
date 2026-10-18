@@ -5,6 +5,8 @@ import br.com.callcenter.core.exception.ResourceNotFoundException;
 import br.com.callcenter.modulorh.api.dto.FuncionarioDto;
 import br.com.callcenter.modulorh.domain.entity.Funcionario;
 import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +27,13 @@ public class FuncionarioService {
         return funcionarioRepository.findAll();
     }
 
+    @Cacheable(value = "funcionarios", key = "#id")
     public Funcionario buscarPorId(UUID id) {
         return funcionarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado"));
     }
 
+    @CacheEvict(value = "funcionarios", allEntries = true)
     public Funcionario criar(FuncionarioDto dto) {
         funcionarioRepository.findByCpf(dto.getCpf()).ifPresent(f -> {
             throw new BusinessException("Já existe funcionário cadastrado com este CPF");
@@ -39,6 +43,7 @@ public class FuncionarioService {
         return funcionarioRepository.save(funcionario);
     }
 
+    @CacheEvict(value = "funcionarios", allEntries = true)
     public Funcionario atualizar(UUID id, FuncionarioDto dto) {
         Funcionario existente = buscarPorId(id);
 
@@ -52,6 +57,7 @@ public class FuncionarioService {
         return funcionarioRepository.save(existente);
     }
 
+    @CacheEvict(value = "funcionarios", allEntries = true)
     public void deletar(UUID id) {
         Funcionario existente = buscarPorId(id);
         funcionarioRepository.delete(existente);

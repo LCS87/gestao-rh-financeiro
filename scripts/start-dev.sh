@@ -64,12 +64,6 @@ else
     echo "✗ Redis não está rodando"
 fi
 
-# Verificar RabbitMQ
-if docker ps --filter "name=gestao-rh-rabbitmq" --format "{{.Status}}" | grep -q "Up"; then
-    echo "✓ RabbitMQ está rodando"
-else
-    echo "✗ RabbitMQ não está rodando"
-fi
 
 echo ""
 echo "========================================"

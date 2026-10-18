@@ -37,24 +37,6 @@ services:
       retries: 5
     command: redis-server --appendonly yes
 
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    container_name: gestao-rh-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - gestao-rh-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   backend:
     build:
@@ -100,7 +82,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  rabbitmq_data:
+
 
 networks:
   gestao-rh-network:

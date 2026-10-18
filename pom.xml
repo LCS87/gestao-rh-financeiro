@@ -64,10 +64,10 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
         
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
+        <!-- spring-boot-starter-amqp REMOVIDO na Fase 5: RabbitMQ nao possuia
+             producer/consumer no codigo (decisao: remover infra nao utilizada).
+             Se mensageria assincrona for implementada, readicionar junto com um
+             NotificationService dedicado. -->
         
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -294,6 +294,38 @@
                     <excludes>
                         <exclude>**/Q*.java</exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- Checkstyle: ligado ao build na fase verify, modo gradual (violationFiles
+                 sao reportados mas nao quebram o build ainda - meta: zerar e ligar failOnViolation). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>10.12.4</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>false</failsOnError>
+                    <failOnViolation>false</failOnViolation>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <excludes>**/generated/**,**/Q*.java</excludes>
                 </configuration>
             </plugin>
 

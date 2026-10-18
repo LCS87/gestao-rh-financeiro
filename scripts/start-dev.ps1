@@ -68,12 +68,6 @@ if ($redisStatus -like "*Up*") {
 }
 
 # Verificar RabbitMQ
-$rabbitmqStatus = docker ps --filter "name=gestao-rh-rabbitmq" --format "{{.Status}}"
-if ($rabbitmqStatus -like "*Up*") {
-    Write-Host "✓ RabbitMQ está rodando" -ForegroundColor Green
-} else {
-    Write-Host "✗ RabbitMQ não está rodando" -ForegroundColor Red
-}
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan

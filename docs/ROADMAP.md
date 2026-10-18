@@ -10,7 +10,7 @@
 - [x] Spring Security + JWT (access/refresh), RBAC com @EnableMethodSecurity ativo
 - [x] CRUD funcionarios/departamentos/cargos/equipes/documentos
 - [x] Redis no compose (uso atual: cache de parametros de sistema)
-- [~] RabbitMQ provisionado porem sem producer/consumer — decisao pendente (integrar notificacoes ou remover)
+- [x] RabbitMQ REMOVIDO na Fase 5 (sem producer/consumer no codigo; dependencia amqp e servico do compose eliminados)
 
 ## Fase 2: Modulo Financeiro ✅ CONCLUIDA
 - [x] Contas pagar/receber, fluxo de caixa, agendamentos
@@ -49,11 +49,11 @@
 ### Infra/Deploy ✅
 - [x] Dockerfile backend multi-stage
 - [x] Dockerfile frontend (build + Nginx com proxy /api e SPA fallback)
-- [x] docker-compose completo (postgres, redis, rabbitmq, backend, frontend)
+- [x] docker-compose completo (postgres, redis, backend, frontend) — RabbitMQ removido na Fase 5 (sem producer/consumer)
 - [x] CI GitHub Actions (.github/workflows/ci.yml): mvn verify + artifact JaCoCo, npm ci/lint/tsc/vitest/build, docker build
 - [x] PMD + SpotBugs reativados no verify em modo gradual (relatorio sem quebrar build)
 - [x] Dead code removido (test.py, auth-design-placeholder.ipynb)
-- [ ] Checkstyle integrado ao ciclo Maven (config existe, plugin ainda nao ligado)
+- [x] Checkstyle integrado ao verify (modo gradual, failOnViolation=false ate zerar violacoes)
 
 ### Melhorias Call Center (backlog)
 - [ ] WebSocket: alerta de meta batida e documentos a vencer (<5 dias)
@@ -66,5 +66,5 @@
 ## Proximos passos imediatos
 1. Ligar fail-on-violation do PMD/SpotBugs apos zerar violacoes criticas
 2. Expandir testes FE para componentes de calculo (holerite/rescisao)
-3. Decidir destino do RabbitMQ (notificacoes assincronas ou remover do compose)
+3. ~~Decidir destino do RabbitMQ~~ — decidido: removido (Fase 5); readicionar apenas com NotificationService real
 4. Implementar WebSocket + NR-17 + AFD como proxima release funcional

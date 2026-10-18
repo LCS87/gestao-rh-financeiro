@@ -89,4 +89,23 @@ public class RegistroPontoService {
         return registroPontoRepository.findByFuncionarioIdAndData(funcionarioId, data)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de ponto não encontrado"));
     }
+
+    /** Variante opcional para fluxos que toleram ausencia de registro (ex.: NR-17). */
+    public RegistroPonto buscarOpcionalPorFuncionarioEData(UUID funcionarioId, LocalDate data) {
+        return registroPontoRepository.findByFuncionarioIdAndData(funcionarioId, data).orElse(null);
+    }
+
+    /** Ajuste manual do espelho pelo supervisor/RH (mantem auditoria via updatedAt). */
+    public RegistroPonto salvarCompletoParaAjuste(RegistroPonto rp) {
+        if (rp.getId() == null) {
+            throw new BusinessException("Registro deve existir para ajuste");
+        }
+        return registroPontoRepository.save(rp);
+    }
+
+    public String nomeFuncionario(UUID funcionarioId) {
+        return funcionarioRepository.findById(funcionarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado"))
+                .getNome();
+    }
 }

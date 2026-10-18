@@ -6,12 +6,13 @@ import {
   useDeletarRegraComissao,
   useSimularComissao,
   useApuracaoComissoes,
+  useAplicarComissoesNaFolha,
   baixarRelatorio,
   type RegraComissao,
 } from '../hooks/useComissoesRelatorios';
 import { PageLoading } from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Percent, Plus, Trash2, Pencil, Download, FlaskConical, Calculator } from 'lucide-react';
+import { Percent, Plus, Trash2, Pencil, Download, FileText, FlaskConical, Calculator, Wallet } from 'lucide-react';
 
 const TIPO_LABELS: Record<string, string> = {
   PORCENTAGEM_VENDA: '% sobre a venda',
@@ -55,6 +56,7 @@ export function Comissoes() {
   const atualizar = useAtualizarRegraComissao();
   const deletar = useDeletarRegraComissao();
   const simular = useSimularComissao();
+  const aplicarFolha = useAplicarComissoesNaFolha();
 
   const regrasList = useMemo(() => regras ?? [], [regras]);
 
@@ -300,6 +302,29 @@ export function Comissoes() {
                 className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded px-3 py-2 text-sm"
               >
                 <Download className="w-4 h-4" /> Exportar CSV
+              </button>
+              <button
+                onClick={() =>
+                  baixarRelatorio('/relatorios/comissoes/export/pdf', { mesReferencia: mes }, `comissoes-${mes}.pdf`).catch(
+                    () => showToast('Erro ao exportar PDF.', 'error'),
+                  )
+                }
+                className="flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white rounded px-3 py-2 text-sm"
+              >
+                <FileText className="w-4 h-4" /> Exportar PDF
+              </button>
+              <button
+                disabled={aplicarFolha.isPending}
+                onClick={() =>
+                  aplicarFolha.mutate(mes, {
+                    onSuccess: (msg) => showToast(String(msg), 'success'),
+                    onError: () => showToast('Erro ao aplicar comissões na folha.', 'error'),
+                  })
+                }
+                className="flex items-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white rounded px-3 py-2 text-sm"
+              >
+                <Wallet className="w-4 h-4" />
+                {aplicarFolha.isPending ? 'Aplicando...' : 'Aplicar na Folha'}
               </button>
             </div>
           </div>

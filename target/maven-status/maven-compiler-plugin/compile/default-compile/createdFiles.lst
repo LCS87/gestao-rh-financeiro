@@ -312,6 +312,7 @@ br/com/callcenter/core/config/SecurityConfig.class
 br/com/callcenter/modulorh/domain/entity/Departamento$DepartamentoBuilder.class
 br/com/callcenter/modulo_comissoes/domain/entity/MetaFuncionario.class
 br/com/callcenter/modulofinanceiro/application/AgendamentoFolhaService.class
+br/com/callcenter/modulorelatorios/application/RelatorioPdfService.class
 br/com/callcenter/modulorh/api/dto/RankingVendedorDto.class
 br/com/callcenter/modulorh/domain/entity/Afastamento$AfastamentoBuilder.class
 br/com/callcenter/modulofinanceiro/application/ContaPagarService.class

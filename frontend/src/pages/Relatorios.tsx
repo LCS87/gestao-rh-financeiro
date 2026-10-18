@@ -8,7 +8,7 @@ import {
 } from '../hooks/useComissoesRelatorios';
 import { PageLoading } from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { FileBarChart2, Download, Wallet, TrendingDown, Sheet } from 'lucide-react';
+import { FileBarChart2, Download, FileText, Wallet, TrendingDown, Sheet } from 'lucide-react';
 
 const mesAtual = () => new Date().toISOString().slice(0, 7);
 const fmtBRL = (v: number | undefined | null) =>
@@ -83,6 +83,12 @@ export function Relatorios() {
               >
                 <Download className="w-4 h-4" /> CSV
               </button>
+              <button
+                onClick={() => exportar('/relatorios/provisoes-folha/export/pdf', { periodo }, `provisoes-${periodo}.pdf`)}
+                className="flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white rounded px-3 py-2 text-sm"
+              >
+                <FileText className="w-4 h-4" /> PDF
+              </button>
             </div>
           </div>
           {loadProv ? (
@@ -126,6 +132,12 @@ export function Relatorios() {
                 className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded px-3 py-2 text-sm"
               >
                 <Download className="w-4 h-4" /> CSV
+              </button>
+              <button
+                onClick={() => exportar('/relatorios/turnover-absenteismo/export/pdf', { periodo }, `turnover-${periodo}.pdf`)}
+                className="flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white rounded px-3 py-2 text-sm"
+              >
+                <FileText className="w-4 h-4" /> PDF
               </button>
             </div>
           </div>
@@ -181,6 +193,14 @@ export function Relatorios() {
                 className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded px-3 py-2 text-sm"
               >
                 <Download className="w-4 h-4" /> CSV
+              </button>
+              <button
+                onClick={() =>
+                  exportar('/relatorios/dre/export/pdf', { periodoInicio: dreInicio, periodoFim: dreFim }, `dre-${dreInicio}-${dreFim}.pdf`)
+                }
+                className="flex items-center gap-2 bg-rose-700 hover:bg-rose-600 text-white rounded px-3 py-2 text-sm"
+              >
+                <FileText className="w-4 h-4" /> PDF
               </button>
             </div>
           </div>

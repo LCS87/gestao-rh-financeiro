@@ -467,3 +467,57 @@ export function useFinalizarDemissao() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['demissoes'] }),
   });
 }
+
+// ── Ponto: NR-17, horas detalhadas e AFD ────────────────
+
+export function useRegistrarPausaNR17() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { funcionarioId: string; tipo: 'DESCANSO_10MIN' | 'LANCHE_20MIN'; observacoes?: string }) => {
+      const { data } = await api.post('/rh/ponto/pausa-nr17', body);
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['ponto'] }),
+  });
+}
+
+export function useCalcularHorasPontoDetalhado(funcionarioId: string | undefined, inicio: string, fim: string) {
+  return useQuery<{ horasNormais: number; horasExtras50: number; horasExtras100: number; totalHoras: number }>({
+    queryKey: ['pontoHorasDetalhado', funcionarioId, inicio, fim],
+    queryFn: async () => {
+      const { data } = await api.get(`/rh/ponto/funcionario/${funcionarioId}/calcular-horas-detalhado?inicio=${inicio}&fim=${fim}`);
+      return data;
+    },
+    enabled: !!funcionarioId,
+  });
+}
+
+export function baixarAFD(funcionarioId: string, inicio: string, fim: string, cnpjEmpresa?: string) {
+  const params = new URLSearchParams({ inicio, fim });
+  if (cnpjEmpresa) params.set('cnpjEmpresa', cnpjEmpresa);
+  return api.get(`/rh/ponto/funcionario/${funcionarioId}/afd?${params.toString()}`, { responseType: 'blob' })
+    .then(({ data }) => {
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `afd_${funcionarioId}_${inicio}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+}
+
+// ── Escalas: vinculação em lote ─────────────────────────
+
+export function useVincularEscalaLote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { escalaId: string; funcionarioIds: string[] }) => {
+      const { data } = await api.post('/rh/escalas/vincular-lote', body);
+      return data as number;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['escalas'] });
+      qc.invalidateQueries({ queryKey: ['funcionarios'] });
+    },
+  });
+}

@@ -4,6 +4,7 @@ import br.com.callcenter.core.exception.ResourceNotFoundException;
 import br.com.callcenter.modulorh.api.dto.EscalaDto;
 import br.com.callcenter.modulorh.domain.entity.Escala;
 import br.com.callcenter.modulorh.infrastructure.repository.EscalaRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +16,12 @@ import java.util.UUID;
 public class EscalaService {
 
     private final EscalaRepository escalaRepository;
+    private final FuncionarioRepository funcionarioRepository;
 
-    public EscalaService(EscalaRepository escalaRepository) {
+    public EscalaService(EscalaRepository escalaRepository,
+                         FuncionarioRepository funcionarioRepository) {
         this.escalaRepository = escalaRepository;
+        this.funcionarioRepository = funcionarioRepository;
     }
 
     public List<Escala> listarTodas() {
@@ -51,5 +55,24 @@ public class EscalaService {
     public void deletar(UUID id) {
         Escala existente = buscarPorId(id);
         escalaRepository.delete(existente);
+    }
+
+    /**
+     * Vincula funcionarios a uma escala em lote. Funcionarios inexistentes
+     * sao ignorados; retorna a quantidade efetivamente atualizada.
+     */
+    public int vincularFuncionariosEmLote(UUID escalaId, List<UUID> funcionarioIds) {
+        buscarPorId(escalaId); // valida existencia da escala
+        int atualizados = 0;
+        for (UUID funcId : funcionarioIds) {
+            var opt = funcionarioRepository.findById(funcId);
+            if (opt.isPresent()) {
+                var f = opt.get();
+                f.setEscalaId(escalaId);
+                funcionarioRepository.save(f);
+                atualizados++;
+            }
+        }
+        return atualizados;
     }
 }

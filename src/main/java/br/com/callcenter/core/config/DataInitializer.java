@@ -7,6 +7,7 @@ import br.com.callcenter.core.repository.ParametroSistemaRepository;
 import br.com.callcenter.core.domain.entity.ParametroSistema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
+    /**
+     * Senha padrão do seed. Em produção, defina SEED_DEFAULT_PASSWORD obrigatoriamente
+     * (ou use as senhas específicas por papel) — o app recusa defaults em prod.
+     */
+    @Value("${app.seed.default-password:#{null}}")
+    private String seedDefaultPassword;
+
+    @Value("${app.seed.rh-password:#{null}}")
+    private String seedRhPassword;
+
+    @Value("${app.seed.financeiro-password:#{null}}")
+    private String seedFinanceiroPassword;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
 
     @Bean
     public CommandLineRunner createDefaultUsers(UsuarioRepository usuarioRepository,
@@ -61,19 +78,33 @@ public class DataInitializer {
                 }
             }
 
-            // 2. Criar TI (Controle Total)
-            seedUser(usuarioRepository, passwordEncoder, "ti", Role.ROLE_TI, "admin123");
+            // 2. Senha do seed: default apenas em dev; obrigatoria em producao
+            String defaultPassword = seedDefaultPassword != null ? seedDefaultPassword : "admin123";
+            if (isProducao() && seedDefaultPassword == null) {
+                throw new IllegalStateException(
+                    "Em producao e obrigatorio definir app.seed.default-password (SEED_DEFAULT_PASSWORD). "
+                    + "Seed com senha padrao 'admin123' nao e permitido.");
+            }
 
-            // 3. Criar Admins
-            seedUser(usuarioRepository, passwordEncoder, "admin", Role.ROLE_ADMIN, "admin123");
-            seedUser(usuarioRepository, passwordEncoder, "admin2", Role.ROLE_ADMIN, "admin123");
+            // 3. Criar TI (Controle Total)
+            seedUser(usuarioRepository, passwordEncoder, "ti", Role.ROLE_TI, defaultPassword);
 
-            // 4. Criar Supervisor
-            seedUser(usuarioRepository, passwordEncoder, "supervisor", Role.ROLE_SUPERVISOR, "admin123");
+            // 4. Criar Admins
+            seedUser(usuarioRepository, passwordEncoder, "admin", Role.ROLE_ADMIN, defaultPassword);
+            seedUser(usuarioRepository, passwordEncoder, "admin2", Role.ROLE_ADMIN, defaultPassword);
 
-            // 5. Criar Usuários Comuns
+            // 5. Criar Supervisor
+            seedUser(usuarioRepository, passwordEncoder, "supervisor", Role.ROLE_SUPERVISOR, defaultPassword);
+
+            // 6. Papeis de negocio RH e FINANCEIRO (faltavam no seed original)
+            seedUser(usuarioRepository, passwordEncoder, "rh", Role.ROLE_RH,
+                    seedRhPassword != null ? seedRhPassword : defaultPassword);
+            seedUser(usuarioRepository, passwordEncoder, "financeiro", Role.ROLE_FINANCEIRO,
+                    seedFinanceiroPassword != null ? seedFinanceiroPassword : defaultPassword);
+
+            // 7. Criar Usuarios Comuns
             for (int i = 1; i <= 7; i++) {
-                seedUser(usuarioRepository, passwordEncoder, "user" + i, Role.ROLE_VISUALIZADOR, "admin123");
+                seedUser(usuarioRepository, passwordEncoder, "user" + i, Role.ROLE_VISUALIZADOR, defaultPassword);
             }
         };
     }
@@ -86,14 +117,15 @@ public class DataInitializer {
                     user.setRole(role);
                     changed = true;
                 }
-                // Forçar reset de senha para garantir acesso nos testes
-                String encodedPassword = encoder.encode(password);
-                user.setPassword(encodedPassword);
-                changed = true;
+                // Em dev, reseta a senha para garantir acesso; em producao nunca reseta senhas existentes
+                if (!isProducao()) {
+                    user.setPassword(encoder.encode(password));
+                    changed = true;
+                }
                 
                 if (changed) {
                     repository.save(user);
-                    log.info("Usuário '{}' atualizado (Role: {}, Senha resetada)", username, role);
+                    log.info("Usuário '{}' atualizado (Role: {})", username, role);
                 }
             },
             () -> {
@@ -108,5 +140,8 @@ public class DataInitializer {
             }
         );
     }
-}
 
+    private boolean isProducao() {
+        return "prod".equalsIgnoreCase(activeProfile) || "production".equalsIgnoreCase(activeProfile);
+    }
+}

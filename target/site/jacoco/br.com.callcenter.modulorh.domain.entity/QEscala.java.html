@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QEscala.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">QEscala.java</span></div><h1>QEscala.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import static com.querydsl.core.types.PathMetadataFactory.*;
+
+import com.querydsl.core.types.dsl.*;
+
+import com.querydsl.core.types.PathMetadata;
+import javax.annotation.processing.Generated;
+import com.querydsl.core.types.Path;
+
+
+/**
+ * QEscala is a Querydsl query type for Escala
+ */
+@Generated(&quot;com.querydsl.codegen.DefaultEntitySerializer&quot;)
+public class QEscala extends EntityPathBase&lt;Escala&gt; {
+
+    private static final long serialVersionUID = -281695084L;
+
+<span class="nc" id="L20">    public static final QEscala escala = new QEscala(&quot;escala&quot;);</span>
+
+<span class="nc" id="L22">    public final DatePath&lt;java.time.LocalDate&gt; createdAt = createDate(&quot;createdAt&quot;, java.time.LocalDate.class);</span>
+
+<span class="nc" id="L24">    public final StringPath descricao = createString(&quot;descricao&quot;);</span>
+
+<span class="nc" id="L26">    public final NumberPath&lt;Double&gt; horasSemanais = createNumber(&quot;horasSemanais&quot;, Double.class);</span>
+
+<span class="nc" id="L28">    public final ComparablePath&lt;java.util.UUID&gt; id = createComparable(&quot;id&quot;, java.util.UUID.class);</span>
+
+<span class="nc" id="L30">    public final StringPath nome = createString(&quot;nome&quot;);</span>
+
+<span class="nc" id="L32">    public final EnumPath&lt;Escala.TipoEscala&gt; tipo = createEnum(&quot;tipo&quot;, Escala.TipoEscala.class);</span>
+
+<span class="nc" id="L34">    public final DatePath&lt;java.time.LocalDate&gt; updatedAt = createDate(&quot;updatedAt&quot;, java.time.LocalDate.class);</span>
+
+    public QEscala(String variable) {
+<span class="nc" id="L37">        super(Escala.class, forVariable(variable));</span>
+<span class="nc" id="L38">    }</span>
+
+    public QEscala(Path&lt;? extends Escala&gt; path) {
+<span class="nc" id="L41">        super(path.getType(), path.getMetadata());</span>
+<span class="nc" id="L42">    }</span>
+
+    public QEscala(PathMetadata metadata) {
+<span class="nc" id="L45">        super(Escala.class, metadata);</span>
+<span class="nc" id="L46">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

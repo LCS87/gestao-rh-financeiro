@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FormularioAvaliacao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">FormularioAvaliacao.java</span></div><h1>FormularioAvaliacao.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import br.com.callcenter.modulorh.domain.enums.TipoFormularioAvaliacao;
+import br.com.callcenter.modulorh.domain.enums.TipoQuestaoAvaliacao;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;formularios_avaliacao&quot;)
+<span class="nc bnc" id="L17" title="All 102 branches missed.">@Data</span>
+<span class="nc" id="L18">@NoArgsConstructor</span>
+<span class="nc" id="L19">@AllArgsConstructor</span>
+public class FormularioAvaliacao {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L24">    private UUID id;</span>
+
+    @Column(nullable = false, length = 100)
+<span class="nc" id="L27">    private String nome;</span>
+
+    @Column(length = 500)
+<span class="nc" id="L30">    private String descricao;</span>
+
+<span class="nc" id="L32">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false, length = 50)
+<span class="nc" id="L34">    private TipoFormularioAvaliacao tipo = TipoFormularioAvaliacao.AUTOAVALIACAO;</span>
+
+<span class="nc" id="L36">    @Column(name = &quot;versao&quot;, nullable = false)</span>
+<span class="nc" id="L37">    private Integer versao = 1;</span>
+
+<span class="nc" id="L39">    @Column(nullable = false)</span>
+<span class="nc" id="L40">    private Boolean ativo = true;</span>
+
+<span class="nc" id="L42">    @Column(name = &quot;data_criacao&quot;, nullable = false)</span>
+<span class="nc" id="L43">    private LocalDateTime dataCriacao = LocalDateTime.now();</span>
+
+    @Column(name = &quot;data_atualizacao&quot;)
+<span class="nc" id="L46">    private LocalDateTime dataAtualizacao;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;formulario_base_id&quot;)
+<span class="nc" id="L50">    private FormularioAvaliacao formularioBase; // Para versionamento</span>
+
+<span class="nc" id="L52">    @OneToMany(mappedBy = &quot;formulario&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    @OrderBy(&quot;ordem ASC&quot;)
+<span class="nc" id="L54">    private List&lt;QuestaoAvaliacao&gt; questoes = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L56">    @OneToMany(mappedBy = &quot;formularioAutoavaliacao&quot;)</span>
+<span class="nc" id="L57">    private List&lt;CicloAvaliacao&gt; ciclosAutoavaliacao = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L59">    @OneToMany(mappedBy = &quot;formularioAvaliacaoGestor&quot;)</span>
+<span class="nc" id="L60">    private List&lt;CicloAvaliacao&gt; ciclosAvaliacaoGestor = new ArrayList&lt;&gt;();</span>
+
+    @PreUpdate
+    public void preUpdate() {
+<span class="nc" id="L64">        this.dataAtualizacao = LocalDateTime.now();</span>
+<span class="nc" id="L65">    }</span>
+
+    // Construtores auxiliares
+<span class="nc" id="L68">    public FormularioAvaliacao(String nome, TipoFormularioAvaliacao tipo) {</span>
+<span class="nc" id="L69">        this.nome = nome;</span>
+<span class="nc" id="L70">        this.tipo = tipo;</span>
+<span class="nc" id="L71">        this.ativo = true;</span>
+<span class="nc" id="L72">        this.dataCriacao = LocalDateTime.now();</span>
+<span class="nc" id="L73">    }</span>
+
+    public FormularioAvaliacao(String nome, String descricao, TipoFormularioAvaliacao tipo) {
+<span class="nc" id="L76">        this(nome, tipo);</span>
+<span class="nc" id="L77">        this.descricao = descricao;</span>
+<span class="nc" id="L78">    }</span>
+
+    // Métodos auxiliares
+    public void adicionarQuestao(String enunciado, TipoQuestaoAvaliacao tipo, Integer ordem, 
+                                String opcoes, Integer peso) {
+<span class="nc" id="L83">        QuestaoAvaliacao questao = new QuestaoAvaliacao(this, enunciado, tipo, ordem, opcoes, peso);</span>
+<span class="nc" id="L84">        this.questoes.add(questao);</span>
+<span class="nc" id="L85">    }</span>
+
+    public FormularioAvaliacao criarNovaVersao() {
+<span class="nc" id="L88">        FormularioAvaliacao novaVersao = new FormularioAvaliacao();</span>
+<span class="nc" id="L89">        novaVersao.setNome(this.nome + &quot; (v&quot; + (this.versao + 1) + &quot;)&quot;);</span>
+<span class="nc" id="L90">        novaVersao.setDescricao(this.descricao);</span>
+<span class="nc" id="L91">        novaVersao.setTipo(this.tipo);</span>
+<span class="nc" id="L92">        novaVersao.setVersao(this.versao + 1);</span>
+<span class="nc" id="L93">        novaVersao.setFormularioBase(this);</span>
+<span class="nc" id="L94">        novaVersao.setAtivo(true);</span>
+        
+        // Copiar questões (serão persistidas quando o formulário for salvo)
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (QuestaoAvaliacao questao : this.questoes) {</span>
+<span class="nc" id="L98">            QuestaoAvaliacao novaQuestao = new QuestaoAvaliacao();</span>
+<span class="nc" id="L99">            novaQuestao.setFormulario(novaVersao);</span>
+<span class="nc" id="L100">            novaQuestao.setEnunciado(questao.getEnunciado());</span>
+<span class="nc" id="L101">            novaQuestao.setTipo(questao.getTipo());</span>
+<span class="nc" id="L102">            novaQuestao.setOrdem(questao.getOrdem());</span>
+<span class="nc" id="L103">            novaQuestao.setOpcoes(questao.getOpcoes());</span>
+<span class="nc" id="L104">            novaQuestao.setPeso(questao.getPeso());</span>
+<span class="nc" id="L105">            novaQuestao.setObrigatoria(questao.getObrigatoria());</span>
+<span class="nc" id="L106">            novaVersao.getQuestoes().add(novaQuestao);</span>
+<span class="nc" id="L107">        }</span>
+        
+<span class="nc" id="L109">        return novaVersao;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.core.security</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.core.security;
+
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+import static br.com.callcenter.core.security.AuthDto.LoginRequest;
+import static br.com.callcenter.core.security.AuthDto.RefreshRequest;
+import static br.com.callcenter.core.security.AuthDto.TokenResponse;
+
+@RestController
+@RequestMapping(&quot;/auth&quot;)
+public class AuthController {
+
+    @GetMapping(&quot;/ping&quot;)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; ping() {
+<span class="nc" id="L27">        return ResponseEntity.ok(Map.of(&quot;status&quot;, &quot;ok&quot;, &quot;service&quot;, &quot;gestao-rh-financeiro&quot;));</span>
+    }
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UsuarioRepository usuarioRepository;
+
+    public AuthController(AuthenticationManager authenticationManager,
+                          JwtTokenProvider jwtTokenProvider,
+<span class="nc" id="L36">                          UsuarioRepository usuarioRepository) {</span>
+<span class="nc" id="L37">        this.authenticationManager = authenticationManager;</span>
+<span class="nc" id="L38">        this.jwtTokenProvider = jwtTokenProvider;</span>
+<span class="nc" id="L39">        this.usuarioRepository = usuarioRepository;</span>
+<span class="nc" id="L40">    }</span>
+
+    @PostMapping(&quot;/login&quot;)
+    public ResponseEntity&lt;TokenResponse&gt; login(@Valid @RequestBody LoginRequest request) {
+<span class="nc" id="L44">        Authentication authentication = authenticationManager.authenticate(</span>
+<span class="nc" id="L45">                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())</span>
+        );
+
+<span class="nc" id="L48">        SecurityContextHolder.getContext().setAuthentication(authentication);</span>
+
+<span class="nc" id="L50">        Usuario usuario = (Usuario) authentication.getPrincipal();</span>
+
+<span class="nc" id="L52">        String accessToken = jwtTokenProvider.generateAccessToken(usuario);</span>
+<span class="nc" id="L53">        String refreshToken = jwtTokenProvider.generateRefreshToken(usuario);</span>
+
+<span class="nc" id="L55">        return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken, &quot;Bearer&quot;));</span>
+    }
+
+    @PostMapping(&quot;/refresh&quot;)
+    public ResponseEntity&lt;TokenResponse&gt; refresh(@Valid @RequestBody RefreshRequest request) {
+<span class="nc" id="L60">        String username = jwtTokenProvider.getUsernameFromToken(request.getRefreshToken());</span>
+<span class="nc" id="L61">        Usuario usuario = usuarioRepository.findByUsername(username)</span>
+<span class="nc" id="L62">                .orElseThrow(() -&gt; new RuntimeException(&quot;Usuário não encontrado para o refresh token&quot;));</span>
+
+<span class="nc" id="L64">        String accessToken = jwtTokenProvider.generateAccessToken(usuario);</span>
+<span class="nc" id="L65">        String refreshToken = jwtTokenProvider.generateRefreshToken(usuario);</span>
+
+<span class="nc" id="L67">        return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken, &quot;Bearer&quot;));</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

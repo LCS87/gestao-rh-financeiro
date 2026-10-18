@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ComissaoController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulo_comissoes.api</a> &gt; <span class="el_source">ComissaoController.java</span></div><h1>ComissaoController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulo_comissoes.api;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.callcenter.modulo_comissoes.api.dto.ApuracaoComissaoResponse;
+import br.com.callcenter.modulo_comissoes.api.dto.SimulacaoComissaoRequest;
+import br.com.callcenter.modulo_comissoes.application.ComissaoService;
+import br.com.callcenter.modulo_comissoes.domain.entity.Meta;
+import br.com.callcenter.modulo_comissoes.domain.entity.RegraComissao;
+import br.com.callcenter.modulo_comissoes.domain.entity.VendaComissao;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping(&quot;/api/comissoes&quot;)
+<span class="nc" id="L30">@RequiredArgsConstructor</span>
+@Tag(name = &quot;Comissões e Metas&quot;, description = &quot;Gestão de comissões e metas de vendas&quot;)
+public class ComissaoController {
+
+    private final ComissaoService comissaoService;
+
+    // --- Regras de Comissão ---
+
+    @GetMapping(&quot;/regras&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','FINANCEIRO')&quot;)
+    public ResponseEntity&lt;List&lt;RegraComissao&gt;&gt; listarRegrasAtivas() {
+<span class="nc" id="L41">        List&lt;RegraComissao&gt; regras = comissaoService.listarRegrasAtivas();</span>
+<span class="nc" id="L42">        return ResponseEntity.ok(regras);</span>
+    }
+
+    @GetMapping(&quot;/regras/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','FINANCEIRO')&quot;)
+    public ResponseEntity&lt;RegraComissao&gt; buscarRegraPorId(@PathVariable UUID id) {
+<span class="nc" id="L48">        RegraComissao regra = comissaoService.buscarRegraPorId(id);</span>
+<span class="nc" id="L49">        return ResponseEntity.ok(regra);</span>
+    }
+
+    @PostMapping(&quot;/regras&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN')&quot;)
+    public ResponseEntity&lt;RegraComissao&gt; criarRegra(@RequestBody RegraComissao regra) {
+<span class="nc" id="L55">        RegraComissao criada = comissaoService.criarRegra(regra);</span>
+<span class="nc" id="L56">        return ResponseEntity.ok(criada);</span>
+    }
+
+    @PutMapping(&quot;/regras/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN')&quot;)
+    public ResponseEntity&lt;RegraComissao&gt; atualizarRegra(@PathVariable UUID id, @RequestBody RegraComissao regra) {
+<span class="nc" id="L62">        RegraComissao atualizada = comissaoService.atualizarRegra(id, regra);</span>
+<span class="nc" id="L63">        return ResponseEntity.ok(atualizada);</span>
+    }
+
+    @DeleteMapping(&quot;/regras/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN')&quot;)
+    public ResponseEntity&lt;Void&gt; desativarRegra(@PathVariable UUID id) {
+<span class="nc" id="L69">        comissaoService.desativarRegra(id);</span>
+<span class="nc" id="L70">        return ResponseEntity.noContent().build();</span>
+    }
+
+    // --- Cálculo de Comissões ---
+
+    @PostMapping(&quot;/vendas/{vendaId}/comissao/{regraId}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','FINANCEIRO')&quot;)
+    public ResponseEntity&lt;VendaComissao&gt; calcularComissaoVenda(
+            @PathVariable UUID vendaId,
+            @PathVariable UUID regraId) {
+<span class="nc" id="L80">        VendaComissao vendaComissao = comissaoService.calcularComissaoVenda(vendaId, regraId);</span>
+<span class="nc" id="L81">        return ResponseEntity.ok(vendaComissao);</span>
+    }
+
+    @PostMapping(&quot;/comissao/{vendaComissaoId}/pagar&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','FINANCEIRO')&quot;)
+    public ResponseEntity&lt;Void&gt; pagarComissao(@PathVariable UUID vendaComissaoId) {
+<span class="nc" id="L87">        comissaoService.pagarComissao(vendaComissaoId);</span>
+<span class="nc" id="L88">        return ResponseEntity.noContent().build();</span>
+    }
+
+    @PostMapping(&quot;/regras/{regraId}/simular&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','FINANCEIRO','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;BigDecimal&gt; simularComissao(
+            @PathVariable UUID regraId,
+            @RequestBody SimulacaoComissaoRequest request) {
+<span class="nc" id="L96">        BigDecimal valor = comissaoService.simularComissao(</span>
+<span class="nc" id="L97">                regraId, request.getValorVenda(), request.getPercentualMeta());</span>
+<span class="nc" id="L98">        return ResponseEntity.ok(valor);</span>
+    }
+
+    @GetMapping(&quot;/apuracao&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','FINANCEIRO','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;ApuracaoComissaoResponse&gt; apurarComissoesMes(
+            @RequestParam String mesReferencia) {
+<span class="nc" id="L105">        return ResponseEntity.ok(comissaoService.apurarComissoesMes(mesReferencia));</span>
+    }
+
+    @PostMapping(&quot;/apuracao/{mesReferencia}/aplicar-folha&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','FINANCEIRO')&quot;)
+    public ResponseEntity&lt;String&gt; aplicarComissoesNaFolha(@PathVariable String mesReferencia) {
+<span class="nc" id="L111">        int aplicadas = comissaoService.aplicarComissoesNaFolha(mesReferencia);</span>
+<span class="nc" id="L112">        return ResponseEntity.ok(&quot;Comissões aplicadas em &quot; + aplicadas + &quot; folha(s) do mês &quot; + mesReferencia);</span>
+    }
+
+    // --- Metas ---
+
+    @GetMapping(&quot;/funcionarios/{funcionarioId}/metas&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;List&lt;Meta&gt;&gt; listarMetasFuncionario(@PathVariable UUID funcionarioId) {
+<span class="nc" id="L120">        List&lt;Meta&gt; metas = comissaoService.listarMetasFuncionario(funcionarioId);</span>
+<span class="nc" id="L121">        return ResponseEntity.ok(metas);</span>
+    }
+
+    @PostMapping(&quot;/metas&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;Meta&gt; criarMeta(@RequestBody Meta meta) {
+<span class="nc" id="L127">        Meta criada = comissaoService.criarMeta(meta);</span>
+<span class="nc" id="L128">        return ResponseEntity.ok(criada);</span>
+    }
+
+    @PutMapping(&quot;/metas/{metaId}/valor&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;Meta&gt; atualizarValorMeta(@PathVariable UUID metaId, @RequestBody BigDecimal valor) {
+<span class="nc" id="L134">        Meta atualizada = comissaoService.atualizarValorMeta(metaId, valor);</span>
+<span class="nc" id="L135">        return ResponseEntity.ok(atualizada);</span>
+    }
+
+    @PutMapping(&quot;/metas/{metaId}/concluir&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;Meta&gt; concluirMeta(@PathVariable UUID metaId) {
+<span class="nc" id="L141">        Meta concluida = comissaoService.concluirMeta(metaId);</span>
+<span class="nc" id="L142">        return ResponseEntity.ok(concluida);</span>
+    }
+
+    // --- Ranking ---
+
+    @GetMapping(&quot;/ranking&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;List&lt;ComissaoService.RankingVendedor&gt;&gt; getRankingVendedores(
+            @RequestParam(defaultValue = &quot;30&quot;) int dias) {
+<span class="nc" id="L151">        List&lt;ComissaoService.RankingVendedor&gt; ranking = comissaoService.getRankingVendedores(dias);</span>
+<span class="nc" id="L152">        return ResponseEntity.ok(ranking);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

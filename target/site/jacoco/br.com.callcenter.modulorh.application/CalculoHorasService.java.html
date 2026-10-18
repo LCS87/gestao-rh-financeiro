@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CalculoHorasService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.application</a> &gt; <span class="el_source">CalculoHorasService.java</span></div><h1>CalculoHorasService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.application;
+
+import br.com.callcenter.modulorh.domain.entity.RegistroPonto;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+
+/**
+ * Calcula horas trabalhadas e extras conforme CLT.
+ * Regra: 44h semanais, excedente = 50% hora extra.
+ */
+@Service
+<span class="nc" id="L16">public class CalculoHorasService {</span>
+
+    private static final double HORAS_SEMANAIS_CLT = 44.0;
+    private static final double HORAS_DIARIAS = HORAS_SEMANAIS_CLT / 6.0; // ~7,33h
+    private static final double MULTIPLICADOR_EXTRA = 1.5;
+
+<span class="nc" id="L22">    public record ResumoHoras(double horasNormais, double horasExtras, double totalHoras) {}</span>
+
+    public ResumoHoras calcular(List&lt;RegistroPonto&gt; registros) {
+<span class="nc" id="L25">        double totalMinutos = 0;</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        for (RegistroPonto rp : registros) {</span>
+<span class="nc" id="L27">            totalMinutos += calcularMinutosTrabalhados(rp);</span>
+<span class="nc" id="L28">        }</span>
+<span class="nc" id="L29">        double totalHoras = totalMinutos / 60.0;</span>
+<span class="nc" id="L30">        double horasEsperadas = registros.size() * HORAS_DIARIAS;</span>
+<span class="nc" id="L31">        double horasNormais = Math.min(totalHoras, horasEsperadas);</span>
+<span class="nc" id="L32">        double horasExtras = Math.max(0, totalHoras - horasEsperadas);</span>
+<span class="nc" id="L33">        return new ResumoHoras(horasNormais, horasExtras, totalHoras);</span>
+    }
+
+    private long calcularMinutosTrabalhados(RegistroPonto rp) {
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        LocalTime saida = rp.getHoraSaida() != null ? rp.getHoraSaida() : LocalTime.MIDNIGHT;</span>
+<span class="nc" id="L38">        Duration total = Duration.between(rp.getHoraEntrada(), saida);</span>
+<span class="nc bnc" id="L39" title="All 4 branches missed.">        if (rp.getHoraIntervaloInicio() != null &amp;&amp; rp.getHoraIntervaloFim() != null) {</span>
+<span class="nc" id="L40">            Duration intervalo = Duration.between(rp.getHoraIntervaloInicio(), rp.getHoraIntervaloFim());</span>
+<span class="nc" id="L41">            total = total.minus(intervalo);</span>
+        }
+<span class="nc" id="L43">        return Math.max(0, total.toMinutes());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

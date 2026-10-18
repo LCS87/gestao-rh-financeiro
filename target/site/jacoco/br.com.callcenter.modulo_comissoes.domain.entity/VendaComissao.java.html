@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VendaComissao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulo_comissoes.domain.entity</a> &gt; <span class="el_source">VendaComissao.java</span></div><h1>VendaComissao.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulo_comissoes.domain.entity;
+
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;vendas_comissao&quot;)
+<span class="nc bnc" id="L15" title="All 94 branches missed.">@Data</span>
+<span class="nc" id="L16">@NoArgsConstructor</span>
+<span class="nc" id="L17">@AllArgsConstructor</span>
+public class VendaComissao {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L22">    private UUID id;</span>
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;venda_id&quot;, nullable = false)
+<span class="nc" id="L26">    private br.com.callcenter.modulorh.domain.entity.Venda venda;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;regra_comissao_id&quot;, nullable = false)
+<span class="nc" id="L30">    private RegraComissao regraComissao;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;funcionario_id&quot;, nullable = false)
+<span class="nc" id="L34">    private Funcionario funcionario;</span>
+
+    @Column(nullable = false, precision = 15, scale = 2)
+<span class="nc" id="L37">    private BigDecimal valorVenda;</span>
+
+    @Column(nullable = false, precision = 15, scale = 2)
+<span class="nc" id="L40">    private BigDecimal valorComissao;</span>
+
+<span class="nc" id="L42">    @Enumerated(EnumType.STRING)</span>
+    @Column(name = &quot;status_pagamento&quot;, nullable = false, length = 50)
+<span class="nc" id="L44">    private StatusPagamento statusPagamento = StatusPagamento.PENDENTE;</span>
+
+    @Column(name = &quot;data_pagamento&quot;)
+<span class="nc" id="L47">    private LocalDateTime dataPagamento;</span>
+
+    @Column(length = 500)
+<span class="nc" id="L50">    private String observacoes;</span>
+
+<span class="nc" id="L52">    @Column(name = &quot;data_criacao&quot;, nullable = false)</span>
+<span class="nc" id="L53">    private LocalDateTime dataCriacao = LocalDateTime.now();</span>
+
+    @Column(name = &quot;data_atualizacao&quot;)
+<span class="nc" id="L56">    private LocalDateTime dataAtualizacao;</span>
+
+    @PreUpdate
+    public void preUpdate() {
+<span class="nc" id="L60">        this.dataAtualizacao = LocalDateTime.now();</span>
+<span class="nc" id="L61">    }</span>
+
+    public void pagarComissao() {
+<span class="nc" id="L64">        this.statusPagamento = StatusPagamento.PAGO;</span>
+<span class="nc" id="L65">        this.dataPagamento = LocalDateTime.now();</span>
+<span class="nc" id="L66">    }</span>
+
+    public void cancelarComissao() {
+<span class="nc" id="L69">        this.statusPagamento = StatusPagamento.CANCELADO;</span>
+<span class="nc" id="L70">    }</span>
+
+    public boolean isPaga() {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        return statusPagamento == StatusPagamento.PAGO;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

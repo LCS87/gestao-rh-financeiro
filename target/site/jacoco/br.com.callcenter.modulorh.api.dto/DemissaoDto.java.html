@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DemissaoDto.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.api.dto</a> &gt; <span class="el_source">DemissaoDto.java</span></div><h1>DemissaoDto.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.api.dto;
+
+import br.com.callcenter.modulorh.domain.entity.Demissao;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+<span class="nc bnc" id="L14" title="All 182 branches missed.">@Data</span>
+<span class="nc" id="L15">@Builder</span>
+<span class="nc" id="L16">@NoArgsConstructor</span>
+<span class="nc" id="L17">@AllArgsConstructor</span>
+public class DemissaoDto {
+<span class="nc" id="L19">    private UUID id;</span>
+    
+    @NotNull(message = &quot;ID do funcionário é obrigatório&quot;)
+<span class="nc" id="L22">    private UUID funcionarioId;</span>
+    
+    @NotNull(message = &quot;Data de demissão é obrigatória&quot;)
+<span class="nc" id="L25">    private LocalDate dataDemissao;</span>
+    
+    @NotNull(message = &quot;Tipo de demissão é obrigatório&quot;)
+<span class="nc" id="L28">    private Demissao.TipoDemissao tipoDemissao;</span>
+    
+<span class="nc" id="L30">    private Demissao.StatusDemissao status;</span>
+    
+<span class="nc" id="L32">    private Boolean avisoPrevioTrabalhado;</span>
+<span class="nc" id="L33">    private Boolean avisoPrevioIndenizado;</span>
+<span class="nc" id="L34">    private Boolean exameDemissionalRealizado;</span>
+<span class="nc" id="L35">    private LocalDate dataExameDemissional;</span>
+<span class="nc" id="L36">    private String motivo;</span>
+<span class="nc" id="L37">    private String observacoes;</span>
+    
+    // Valores calculados
+<span class="nc" id="L40">    private BigDecimal saldoSalario;</span>
+<span class="nc" id="L41">    private BigDecimal feriasVencidas;</span>
+<span class="nc" id="L42">    private BigDecimal feriasProporcionais;</span>
+<span class="nc" id="L43">    private BigDecimal decimoTerceiro;</span>
+<span class="nc" id="L44">    private BigDecimal decimoTerceiroProporcional;</span>
+<span class="nc" id="L45">    private BigDecimal avisoPrevioIndenizadoValor;</span>
+<span class="nc" id="L46">    private BigDecimal fgts;</span>
+<span class="nc" id="L47">    private BigDecimal multaFgts;</span>
+<span class="nc" id="L48">    private BigDecimal valorTotalRescisao;</span>
+<span class="nc" id="L49">    private LocalDate dataCalculo;</span>
+    
+<span class="nc" id="L51">    private UUID responsavelDemissaoId;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VendaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.application</a> &gt; <span class="el_source">VendaService.java</span></div><h1>VendaService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.application;
+
+import br.com.callcenter.core.application.ParametroSistemaService;
+import br.com.callcenter.modulorh.api.dto.HistoricoVendasDto;
+import br.com.callcenter.modulorh.api.dto.RankingVendedorDto;
+import br.com.callcenter.modulorh.api.dto.ResumoVendasDto;
+import br.com.callcenter.modulorh.api.dto.VendaDto;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.domain.entity.Venda;
+import br.com.callcenter.modulorh.infrastructure.repository.DepartamentoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.VendaRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+<span class="nc" id="L30">@RequiredArgsConstructor</span>
+public class VendaService {
+
+    private final VendaRepository vendaRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final DepartamentoRepository departamentoRepository;
+    private final ParametroSistemaService parametroService;
+
+    @Transactional
+    public VendaDto registrarVenda(UUID funcionarioId, BigDecimal valor) {
+<span class="nc" id="L40">        Funcionario funcionario = funcionarioRepository.findById(funcionarioId)</span>
+<span class="nc" id="L41">                .orElseThrow(() -&gt; new RuntimeException(&quot;Vendedor não encontrado&quot;));</span>
+
+<span class="nc" id="L43">        Venda venda = Venda.builder()</span>
+<span class="nc" id="L44">                .vendedor(funcionario)</span>
+<span class="nc" id="L45">                .valor(valor)</span>
+<span class="nc" id="L46">                .dataVenda(LocalDateTime.now())</span>
+<span class="nc" id="L47">                .build();</span>
+
+<span class="nc" id="L49">        Venda salva = vendaRepository.save(venda);</span>
+
+<span class="nc" id="L51">        return mapToDto(salva);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;VendaDto&gt; listarVendas() {
+<span class="nc" id="L56">        return vendaRepository.findAll().stream()</span>
+<span class="nc" id="L57">                .map(this::mapToDto)</span>
+<span class="nc" id="L58">                .collect(Collectors.toList());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public ResumoVendasDto getResumoVendas() {
+<span class="nc" id="L63">        LocalDateTime hoje = LocalDate.now().atStartOfDay();</span>
+<span class="nc" id="L64">        LocalDateTime inicioSemana = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1).atStartOfDay();</span>
+<span class="nc" id="L65">        LocalDateTime inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay();</span>
+<span class="nc" id="L66">        LocalDateTime fimDoDia = hoje.plusDays(1).minusNanos(1);</span>
+
+<span class="nc" id="L68">        Double diario = vendaRepository.sumValorByPeriodo(hoje, fimDoDia);</span>
+<span class="nc" id="L69">        Double semanal = vendaRepository.sumValorByPeriodo(inicioSemana, fimDoDia);</span>
+<span class="nc" id="L70">        Double mensal = vendaRepository.sumValorByPeriodo(inicioMes, fimDoDia);</span>
+
+<span class="nc" id="L72">        return ResumoVendasDto.builder()</span>
+<span class="nc" id="L73">                .totalDiario(BigDecimal.valueOf(diario))</span>
+<span class="nc" id="L74">                .totalSemanal(BigDecimal.valueOf(semanal))</span>
+<span class="nc" id="L75">                .totalMensal(BigDecimal.valueOf(mensal))</span>
+<span class="nc" id="L76">                .build();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;RankingVendedorDto&gt; getRankingDiario() {
+<span class="nc" id="L81">        LocalDateTime inicioHoje = LocalDate.now().atStartOfDay();</span>
+<span class="nc" id="L82">        LocalDateTime fimHoje = inicioHoje.plusDays(1).minusNanos(1);</span>
+        
+<span class="nc" id="L84">        LocalDateTime inicioSemana = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1).atStartOfDay();</span>
+<span class="nc" id="L85">        LocalDateTime inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay();</span>
+
+        // Filtra apenas funcionários do departamento &quot;Comercial&quot;
+<span class="nc" id="L88">        List&lt;Funcionario&gt; vendedores = departamentoRepository.findByNome(&quot;Comercial&quot;)</span>
+<span class="nc" id="L89">                .map(dept -&gt; funcionarioRepository.findByDepartamentoId(dept.getId()))</span>
+<span class="nc" id="L90">                .orElse(new ArrayList&lt;&gt;());</span>
+
+<span class="nc" id="L92">        List&lt;RankingVendedorDto&gt; rankingList = new ArrayList&lt;&gt;();</span>
+        
+        // Pega do Parâmetro ouFallback 1400.00
+<span class="nc" id="L95">        BigDecimal metaDiaria = new BigDecimal(</span>
+<span class="nc" id="L96">            parametroService.getValorParametro(&quot;META_VENDAS_DIARIA&quot;, &quot;1400.00&quot;)</span>
+        );
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (Funcionario f : vendedores) {</span>
+<span class="nc" id="L100">            Double diarioNum = vendaRepository.sumValorByVendedorIdAndPeriodo(f.getId(), inicioHoje, fimHoje);</span>
+<span class="nc" id="L101">            Double semanalNum = vendaRepository.sumValorByVendedorIdAndPeriodo(f.getId(), inicioSemana, fimHoje);</span>
+<span class="nc" id="L102">            Double mensalNum = vendaRepository.sumValorByVendedorIdAndPeriodo(f.getId(), inicioMes, fimHoje);</span>
+            
+<span class="nc" id="L104">            BigDecimal diario = BigDecimal.valueOf(diarioNum);</span>
+            
+            // Vamos adicionar ao ranking, mesmo 0. Depois o front-end ordena.
+<span class="nc" id="L107">            rankingList.add(RankingVendedorDto.builder()</span>
+<span class="nc" id="L108">                    .vendedorId(f.getId())</span>
+<span class="nc" id="L109">                    .vendedorNome(f.getNome())</span>
+<span class="nc" id="L110">                    .vendasDiarias(diario)</span>
+<span class="nc" id="L111">                    .vendasSemanais(BigDecimal.valueOf(semanalNum))</span>
+<span class="nc" id="L112">                    .vendasMensais(BigDecimal.valueOf(mensalNum))</span>
+<span class="nc" id="L113">                    .metaDiaria(metaDiaria)</span>
+<span class="nc" id="L114">                    .build());</span>
+<span class="nc" id="L115">        }</span>
+
+        // Ordenar decrescente por vendas diárias
+<span class="nc" id="L118">        rankingList.sort((a, b) -&gt; b.getVendasDiarias().compareTo(a.getVendasDiarias()));</span>
+
+<span class="nc" id="L120">        return rankingList;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;HistoricoVendasDto&gt; getHistoricoGlobal(int dias) {
+<span class="nc" id="L125">        LocalDateTime inicio = LocalDate.now().minusDays(dias).atStartOfDay();</span>
+<span class="nc" id="L126">        List&lt;Object[]&gt; results = vendaRepository.findHistoricoGlobal(inicio);</span>
+        
+        // Pega do Parâmetro ouFallback 1400 * numVendedores (mock para a global goal)
+        // O Dashboard assume 4500 daily goal approx no mock, let's use globalGoal / 30
+<span class="nc" id="L130">        BigDecimal globalGoal = new BigDecimal(parametroService.getValorParametro(&quot;globalGoal&quot;, &quot;150000.00&quot;));</span>
+<span class="nc" id="L131">        BigDecimal metaDiariaGlobal = globalGoal.divide(BigDecimal.valueOf(30), 2, java.math.RoundingMode.HALF_UP);</span>
+        
+<span class="nc" id="L133">        return processarHistorico(results, dias, metaDiariaGlobal);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;HistoricoVendasDto&gt; getHistoricoPessoal(UUID vendedorId, int dias) {
+<span class="nc" id="L138">        LocalDateTime inicio = LocalDate.now().minusDays(dias).atStartOfDay();</span>
+<span class="nc" id="L139">        List&lt;Object[]&gt; results = vendaRepository.findHistoricoByVendedor(vendedorId, inicio);</span>
+        
+        // Meta diária individual
+<span class="nc" id="L142">        BigDecimal metaDiaria = new BigDecimal(parametroService.getValorParametro(&quot;META_VENDAS_DIARIA&quot;, &quot;1400.00&quot;));</span>
+        
+<span class="nc" id="L144">        return processarHistorico(results, dias, metaDiaria);</span>
+    }
+
+    private List&lt;HistoricoVendasDto&gt; processarHistorico(List&lt;Object[]&gt; results, int dias, BigDecimal metaDiaria) {
+<span class="nc" id="L148">        Map&lt;String, BigDecimal&gt; vendasPorDia = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L149">        DateTimeFormatter sqlFormatter = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&quot;);</span>
+        
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        for (Object[] row : results) {</span>
+<span class="nc" id="L152">            String dbDateStr = String.valueOf(row[0]);</span>
+            try {
+                // Tenta extrair apenas yyyy-MM-dd se vier com time do DBeaver
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                if (dbDateStr.length() &gt; 10) dbDateStr = dbDateStr.substring(0, 10);</span>
+<span class="nc" id="L156">                BigDecimal total = new BigDecimal(String.valueOf(row[1]));</span>
+<span class="nc" id="L157">                vendasPorDia.put(dbDateStr, total);</span>
+<span class="nc" id="L158">            } catch (Exception e) {}</span>
+<span class="nc" id="L159">        }</span>
+        
+        // Preencher buracos para os últimos 'dias' dias (ordem cronológica)
+<span class="nc" id="L162">        List&lt;HistoricoVendasDto&gt; historico = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L163">        DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern(&quot;dd/MM&quot;);</span>
+        
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        for (int i = dias - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L166">            LocalDate dia = LocalDate.now().minusDays(i);</span>
+<span class="nc" id="L167">            String key = dia.format(sqlFormatter);</span>
+<span class="nc" id="L168">            String label = dia.format(displayFormatter);</span>
+            
+<span class="nc" id="L170">            BigDecimal vendas = vendasPorDia.getOrDefault(key, BigDecimal.ZERO);</span>
+<span class="nc" id="L171">            historico.add(new HistoricoVendasDto(label, vendas, metaDiaria));</span>
+        }
+<span class="nc" id="L173">        return historico;</span>
+    }
+
+    private VendaDto mapToDto(Venda venda) {
+<span class="nc" id="L177">        return VendaDto.builder()</span>
+<span class="nc" id="L178">                .id(venda.getId())</span>
+<span class="nc" id="L179">                .vendedorId(venda.getVendedor().getId())</span>
+<span class="nc" id="L180">                .vendedorNome(venda.getVendedor().getNome())</span>
+<span class="nc" id="L181">                .valor(venda.getValor())</span>
+<span class="nc" id="L182">                .dataVenda(venda.getDataVenda())</span>
+<span class="nc" id="L183">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

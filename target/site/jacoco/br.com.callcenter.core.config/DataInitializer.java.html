@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataInitializer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.core.config</a> &gt; <span class="el_source">DataInitializer.java</span></div><h1>DataInitializer.java</h1><pre class="source lang-java linenums">package br.com.callcenter.core.config;
+
+import br.com.callcenter.core.security.Role;
+import br.com.callcenter.core.security.Usuario;
+import br.com.callcenter.core.security.UsuarioRepository;
+import br.com.callcenter.core.repository.ParametroSistemaRepository;
+import br.com.callcenter.core.domain.entity.ParametroSistema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@Configuration
+<span class="nc" id="L17">public class DataInitializer {</span>
+
+<span class="nc" id="L19">    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);</span>
+
+    /**
+     * Senha padrão do seed. Em produção, defina SEED_DEFAULT_PASSWORD obrigatoriamente
+     * (ou use as senhas específicas por papel) — o app recusa defaults em prod.
+     */
+    @Value(&quot;${app.seed.default-password:#{null}}&quot;)
+    private String seedDefaultPassword;
+
+    @Value(&quot;${app.seed.rh-password:#{null}}&quot;)
+    private String seedRhPassword;
+
+    @Value(&quot;${app.seed.financeiro-password:#{null}}&quot;)
+    private String seedFinanceiroPassword;
+
+    @Value(&quot;${spring.profiles.active:dev}&quot;)
+    private String activeProfile;
+
+    @Bean
+    public CommandLineRunner createDefaultUsers(UsuarioRepository usuarioRepository,
+                                                PasswordEncoder passwordEncoder,
+                                                br.com.callcenter.modulorh.infrastructure.repository.DepartamentoRepository deptRepository,
+                                                ParametroSistemaRepository parametroRepository) {
+<span class="nc" id="L42">        return args -&gt; {</span>
+            // 0. Inicializar Parâmetros do Sistema (Chaves Padrões)
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            if (parametroRepository.count() == 0) {</span>
+                // Tema
+<span class="nc" id="L46">                ParametroSistema theme = new ParametroSistema();</span>
+<span class="nc" id="L47">                theme.setChave(&quot;theme&quot;);</span>
+<span class="nc" id="L48">                theme.setValor(&quot;Dark Mode (Padrão)&quot;);</span>
+<span class="nc" id="L49">                theme.setDescricao(&quot;Tema padrão do sistema&quot;);</span>
+<span class="nc" id="L50">                parametroRepository.save(theme);</span>
+
+                // Meta Global
+<span class="nc" id="L53">                ParametroSistema globalGoal = new ParametroSistema();</span>
+<span class="nc" id="L54">                globalGoal.setChave(&quot;globalGoal&quot;);</span>
+<span class="nc" id="L55">                globalGoal.setValor(&quot;150000&quot;);</span>
+<span class="nc" id="L56">                globalGoal.setDescricao(&quot;Meta de Vendas Diária Global&quot;);</span>
+<span class="nc" id="L57">                parametroRepository.save(globalGoal);</span>
+                
+                // Allow Late Sales
+<span class="nc" id="L60">                ParametroSistema lateSales = new ParametroSistema();</span>
+<span class="nc" id="L61">                lateSales.setChave(&quot;allowLateSales&quot;);</span>
+<span class="nc" id="L62">                lateSales.setValor(&quot;false&quot;);</span>
+<span class="nc" id="L63">                lateSales.setDescricao(&quot;Permitir Vendas Retroativas&quot;);</span>
+<span class="nc" id="L64">                parametroRepository.save(lateSales);</span>
+                
+<span class="nc" id="L66">                log.info(&quot;Parâmetros do sistema iniciais criados&quot;);</span>
+            }
+
+            // 1. Criar Departamentos Predefinidos
+<span class="nc" id="L70">            String[] depts = {&quot;Comercial&quot;, &quot;TI&quot;, &quot;BKO&quot;, &quot;Renovação&quot;, &quot;Pos-Venda&quot;, &quot;Auditoria&quot;, &quot;RH&quot;, &quot;Financeiro&quot;, &quot;Logistica&quot;};</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            for (String nome : depts) {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                if (!deptRepository.findByNome(nome).isPresent()) {</span>
+<span class="nc" id="L73">                    br.com.callcenter.modulorh.domain.entity.Departamento d = new br.com.callcenter.modulorh.domain.entity.Departamento();</span>
+<span class="nc" id="L74">                    d.setNome(nome);</span>
+<span class="nc" id="L75">                    d.setDescricao(&quot;Departamento de &quot; + nome);</span>
+<span class="nc" id="L76">                    deptRepository.save(d);</span>
+<span class="nc" id="L77">                    log.info(&quot;Departamento '{}' criado&quot;, nome);</span>
+                }
+            }
+
+            // 2. Senha do seed: default apenas em dev; obrigatoria em producao
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            String defaultPassword = seedDefaultPassword != null ? seedDefaultPassword : &quot;admin123&quot;;</span>
+<span class="nc bnc" id="L83" title="All 4 branches missed.">            if (isProducao() &amp;&amp; seedDefaultPassword == null) {</span>
+<span class="nc" id="L84">                throw new IllegalStateException(</span>
+                    &quot;Em producao e obrigatorio definir app.seed.default-password (SEED_DEFAULT_PASSWORD). &quot;
+                    + &quot;Seed com senha padrao 'admin123' nao e permitido.&quot;);
+            }
+
+            // 3. Criar TI (Controle Total)
+<span class="nc" id="L90">            seedUser(usuarioRepository, passwordEncoder, &quot;ti&quot;, Role.ROLE_TI, defaultPassword);</span>
+
+            // 4. Criar Admins
+<span class="nc" id="L93">            seedUser(usuarioRepository, passwordEncoder, &quot;admin&quot;, Role.ROLE_ADMIN, defaultPassword);</span>
+<span class="nc" id="L94">            seedUser(usuarioRepository, passwordEncoder, &quot;admin2&quot;, Role.ROLE_ADMIN, defaultPassword);</span>
+
+            // 5. Criar Supervisor
+<span class="nc" id="L97">            seedUser(usuarioRepository, passwordEncoder, &quot;supervisor&quot;, Role.ROLE_SUPERVISOR, defaultPassword);</span>
+
+            // 6. Papeis de negocio RH e FINANCEIRO (faltavam no seed original)
+<span class="nc" id="L100">            seedUser(usuarioRepository, passwordEncoder, &quot;rh&quot;, Role.ROLE_RH,</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                    seedRhPassword != null ? seedRhPassword : defaultPassword);</span>
+<span class="nc" id="L102">            seedUser(usuarioRepository, passwordEncoder, &quot;financeiro&quot;, Role.ROLE_FINANCEIRO,</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                    seedFinanceiroPassword != null ? seedFinanceiroPassword : defaultPassword);</span>
+
+            // 7. Criar Usuarios Comuns
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            for (int i = 1; i &lt;= 7; i++) {</span>
+<span class="nc" id="L107">                seedUser(usuarioRepository, passwordEncoder, &quot;user&quot; + i, Role.ROLE_VISUALIZADOR, defaultPassword);</span>
+            }
+<span class="nc" id="L109">        };</span>
+    }
+
+    private void seedUser(UsuarioRepository repository, PasswordEncoder encoder, String username, Role role, String password) {
+<span class="nc" id="L113">        repository.findByUsername(username).ifPresentOrElse(</span>
+            user -&gt; {
+<span class="nc" id="L115">                boolean changed = false;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (user.getRole() != role) {</span>
+<span class="nc" id="L117">                    user.setRole(role);</span>
+<span class="nc" id="L118">                    changed = true;</span>
+                }
+                // Em dev, reseta a senha para garantir acesso; em producao nunca reseta senhas existentes
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                if (!isProducao()) {</span>
+<span class="nc" id="L122">                    user.setPassword(encoder.encode(password));</span>
+<span class="nc" id="L123">                    changed = true;</span>
+                }
+                
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                if (changed) {</span>
+<span class="nc" id="L127">                    repository.save(user);</span>
+<span class="nc" id="L128">                    log.info(&quot;Usuário '{}' atualizado (Role: {})&quot;, username, role);</span>
+                }
+<span class="nc" id="L130">            },</span>
+            () -&gt; {
+<span class="nc" id="L132">                Usuario user = Usuario.builder()</span>
+<span class="nc" id="L133">                        .username(username)</span>
+<span class="nc" id="L134">                        .password(encoder.encode(password))</span>
+<span class="nc" id="L135">                        .role(role)</span>
+<span class="nc" id="L136">                        .enabled(true)</span>
+<span class="nc" id="L137">                        .build();</span>
+<span class="nc" id="L138">                repository.save(user);</span>
+<span class="nc" id="L139">                log.info(&quot;Usuário '{}' criado com role {}&quot;, username, role);</span>
+<span class="nc" id="L140">            }</span>
+        );
+<span class="nc" id="L142">    }</span>
+
+    private boolean isProducao() {
+<span class="nc bnc" id="L145" title="All 4 branches missed.">        return &quot;prod&quot;.equalsIgnoreCase(activeProfile) || &quot;production&quot;.equalsIgnoreCase(activeProfile);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

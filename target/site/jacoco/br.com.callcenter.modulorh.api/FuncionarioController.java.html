@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FuncionarioController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.api</a> &gt; <span class="el_source">FuncionarioController.java</span></div><h1>FuncionarioController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.api;
+
+import br.com.callcenter.modulorh.api.dto.FuncionarioDto;
+import br.com.callcenter.modulorh.application.FuncionarioService;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.core.annotation.Audited;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping(&quot;/rh/funcionarios&quot;)
+public class FuncionarioController {
+
+    private final FuncionarioService funcionarioService;
+
+<span class="nc" id="L23">    public FuncionarioController(FuncionarioService funcionarioService) {</span>
+<span class="nc" id="L24">        this.funcionarioService = funcionarioService;</span>
+<span class="nc" id="L25">    }</span>
+
+    @GetMapping
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;List&lt;Funcionario&gt;&gt; listar() {
+<span class="nc" id="L30">        return ResponseEntity.ok(funcionarioService.listarTodos());</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;Funcionario&gt; buscarPorId(@PathVariable UUID id) {
+<span class="nc" id="L36">        return ResponseEntity.ok(funcionarioService.buscarPorId(id));</span>
+    }
+
+    @PostMapping
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH')&quot;)
+    public ResponseEntity&lt;Funcionario&gt; criar(@Valid @RequestBody FuncionarioDto dto) {
+<span class="nc" id="L42">        Funcionario criado = funcionarioService.criar(dto);</span>
+<span class="nc" id="L43">        return ResponseEntity.status(HttpStatus.CREATED).body(criado);</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH')&quot;)
+    public ResponseEntity&lt;Funcionario&gt; atualizar(@PathVariable UUID id,
+                                                 @Valid @RequestBody FuncionarioDto dto) {
+<span class="nc" id="L50">        return ResponseEntity.ok(funcionarioService.atualizar(id, dto));</span>
+    }
+
+    @Operation(summary = &quot;Excluir funcionário (Apenas TI)&quot;)
+    @PreAuthorize(&quot;hasRole('TI')&quot;)
+    @DeleteMapping(&quot;/{id}&quot;)
+    @Audited(acao = &quot;DELETE&quot;, tabela = &quot;funcionarios&quot;)
+    public ResponseEntity&lt;Void&gt; deletar(@PathVariable UUID id) {
+<span class="nc" id="L58">        funcionarioService.deletar(id);</span>
+<span class="nc" id="L59">        return ResponseEntity.noContent().build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

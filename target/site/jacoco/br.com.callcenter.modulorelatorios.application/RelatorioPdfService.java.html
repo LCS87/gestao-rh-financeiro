@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RelatorioPdfService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorelatorios.application</a> &gt; <span class="el_source">RelatorioPdfService.java</span></div><h1>RelatorioPdfService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorelatorios.application;
+
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.design.JRDesignBand;
+import net.sf.jasperreports.engine.design.JRDesignSection;
+import net.sf.jasperreports.engine.design.JRDesignStaticText;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.SplitTypeEnum;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Gera PDFs reais dos relatórios gerenciais via JasperReports construído
+ * dinamicamente em memória (mesma técnica do fallback do contracheque),
+ * sem depender de arquivos .jrxml/.jasper no classpath.
+ */
+@Service
+<span class="nc" id="L23">public class RelatorioPdfService {</span>
+
+    private static final int PAGE_WIDTH = 595;   // A4 em pontos
+    private static final int PAGE_HEIGHT = 842;
+    private static final int COLUMN_WIDTH = 555;
+
+    /**
+     * @param titulo   título do relatório (banda de título)
+     * @param subtitulo linha auxiliar (período, data de emissão etc.)
+     * @param linhas   linhas do corpo — cada linha é um par [rótulo, valor]
+     */
+    public byte[] gerarRelatorio(String titulo, String subtitulo, List&lt;String[]&gt; linhas) throws Exception {
+<span class="nc" id="L35">        JasperDesign design = new JasperDesign();</span>
+<span class="nc" id="L36">        design.setName(&quot;RelatorioGerencial&quot;);</span>
+<span class="nc" id="L37">        design.setPageWidth(PAGE_WIDTH);</span>
+<span class="nc" id="L38">        design.setPageHeight(PAGE_HEIGHT);</span>
+<span class="nc" id="L39">        design.setColumnWidth(COLUMN_WIDTH);</span>
+<span class="nc" id="L40">        design.setLeftMargin(20);</span>
+<span class="nc" id="L41">        design.setRightMargin(20);</span>
+<span class="nc" id="L42">        design.setTopMargin(20);</span>
+<span class="nc" id="L43">        design.setBottomMargin(20);</span>
+
+<span class="nc" id="L45">        JRDesignBand titleBand = new JRDesignBand();</span>
+<span class="nc" id="L46">        titleBand.setHeight(46);</span>
+<span class="nc" id="L47">        titleBand.addElement(staticText(0, 4, COLUMN_WIDTH, 20, titulo, true));</span>
+<span class="nc bnc" id="L48" title="All 4 branches missed.">        if (subtitulo != null &amp;&amp; !subtitulo.isBlank()) {</span>
+<span class="nc" id="L49">            titleBand.addElement(staticText(0, 26, COLUMN_WIDTH, 14, subtitulo, false));</span>
+        }
+<span class="nc" id="L51">        design.setTitle(titleBand);</span>
+
+<span class="nc" id="L53">        JRDesignBand detailBand = new JRDesignBand();</span>
+<span class="nc" id="L54">        detailBand.setHeight(16);</span>
+<span class="nc" id="L55">        int y = 0;</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        for (String[] linha : linhas) {</span>
+<span class="nc bnc" id="L57" title="All 4 branches missed.">            boolean secao = linha.length &gt; 2 &amp;&amp; &quot;SECAO&quot;.equals(linha[2]);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (secao) {</span>
+<span class="nc" id="L59">                detailBand.addElement(staticText(0, y, COLUMN_WIDTH, 14, linha[0], true));</span>
+<span class="nc" id="L60">                y += 16;</span>
+            } else {
+<span class="nc" id="L62">                detailBand.addElement(staticText(10, y, 330, 14, linha[0], false));</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">                detailBand.addElement(staticText(350, y, 205, 14, linha[1] == null ? &quot;&quot; : linha[1], false));</span>
+<span class="nc" id="L64">                y += 14;</span>
+            }
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (y &gt; 700) {</span>
+<span class="nc" id="L67">                break; // proteção contra overflow de uma única página de detalhe</span>
+            }
+<span class="nc" id="L69">        }</span>
+<span class="nc" id="L70">        detailBand.setSplitType(SplitTypeEnum.STRETCH);</span>
+
+        // JasperReports não expõe setDetailSection público no JasperDesign;
+        // injeção por reflection (padrão já usado no ContrachequeService).
+<span class="nc" id="L74">        JRDesignSection detailSection = new JRDesignSection(null);</span>
+<span class="nc" id="L75">        detailSection.addBand(detailBand);</span>
+<span class="nc" id="L76">        java.lang.reflect.Field detailField =</span>
+<span class="nc" id="L77">                net.sf.jasperreports.engine.base.JRBaseReport.class.getDeclaredField(&quot;detailSection&quot;);</span>
+<span class="nc" id="L78">        detailField.setAccessible(true);</span>
+<span class="nc" id="L79">        detailField.set(design, detailSection);</span>
+
+<span class="nc" id="L81">        var jasperReport = JasperCompileManager.compileReport(design);</span>
+<span class="nc" id="L82">        var jasperPrint = JasperFillManager.fillReport(jasperReport, null, new JREmptyDataSource(1));</span>
+<span class="nc" id="L83">        return JasperExportManager.exportReportToPdf(jasperPrint);</span>
+    }
+
+    private JRDesignStaticText staticText(int x, int y, int width, int height, String text, boolean bold) {
+<span class="nc" id="L87">        JRDesignStaticText st = new JRDesignStaticText();</span>
+<span class="nc" id="L88">        st.setX(x);</span>
+<span class="nc" id="L89">        st.setY(y);</span>
+<span class="nc" id="L90">        st.setWidth(width);</span>
+<span class="nc" id="L91">        st.setHeight(height);</span>
+<span class="nc" id="L92">        st.setText(text);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        st.setFontSize(bold ? 12f : 9f);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (bold) {</span>
+<span class="nc" id="L95">            st.setBold(Boolean.TRUE);</span>
+        }
+<span class="nc" id="L97">        return st;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

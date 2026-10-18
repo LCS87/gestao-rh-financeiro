@@ -160,52 +160,25 @@ npm run format
 7. **Acesse a aplicação**
 
 #### 🏠 Acesso Local (Rede Interna)
-- **Interface web**: http://localhost:3000
+- **Interface web**: http://localhost:3007 (porta configurada no `vite.config.ts`)
 - **API**: http://localhost:8080
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Swagger UI**: http://localhost:8080/swagger-ui.html (autenticação exigida em produção)
 - **API Docs**: http://localhost:8080/api-docs
-- **Health**: http://localhost:8080/actuator/health
-- **RabbitMQ**: http://localhost:15672 (guest/guest)
+- **Health**: http://localhost:8080/actuator/health (protegido — apenas ROLE_TI/ADMIN)
+- **PostgreSQL**: localhost:5432 / banco `gestao_rh_financeiro` (via docker-compose)
 
 #### 📱 Acesso Remoto (Mesma Rede Wi-Fi)
-- **Dispositivos móveis**: http://192.168.0.5:3004
-- **Outros computadores**: http://192.168.0.5:3004
-- **Smart TVs**: http://192.168.0.5:3004
+- Ajuste o IP da máquina local (`ipconfig`/`ifconfig`) e acesse via rede: `http://SEU_IP:3007` (Vite configurado com `host: 0.0.0.0`).
 
-#### 🌐 Acesso Externo (Qualquer Lugar)
-Para acessar o sistema de outra rede, use uma das opções abaixo:
-
-**Opção 1: NGROK (Recomendado - 5 minutos)**
-```bash
-# 1. Criar conta em https://dashboard.ngrok.com/signup
-# 2. Obter authtoken em https://dashboard.ngrok.com/get-started/your-authtoken
-# 3. Configurar:
-cd frontend
-.\ngrok.exe config add-authtoken SEU_TOKEN
-# 4. Iniciar túnel:
-.\ngrok.exe http 3004
-# 5. Usar URL gerada: https://xxxxx.ngrok.io
-```
-
-**Opção 2: VPN Corporativa**
-- Configurar servidor VPN no Windows
-- Conectar-se remotamente via VPN
-- Acessar: http://localhost:3004
-
-**Opção 3: Port Forwarding**
-- Configurar roteador: Porta Externa 3004 → IP Interno 192.168.0.5:3004
-- Acessar: http://187.19.172.104:3004
-
-> **Importante**: O sistema está configurado com `host: '0.0.0.0'` para permitir acesso externo. Use NGROK para acesso rápido e seguro.
+#### 🌐 Acesso Externo
+> ⚠️ **Nota de segurança**: exposição via túnel (ngrok, port forwarding etc.) é prática de laboratório/desenvolvimento, **não recomendada para produção**. Para deploy real, use HTTPS com Nginx/reverse proxy autenticado e CORS restrito. O pipeline CI/CD e os Dockerfiles da aplicação ainda estão pendentes na Fase 5.
 
 O frontend faz proxy de `/api` para o backend (porta configurada no `vite.config.ts`).
 
-8. **Login padrão (ambiente de desenvolvimento)**
+8. **Login padrão (exclusivo para desenvolvimento)**
 
-- **Usuário**: `admin`
-- **Senha**: `admin123`
-
-Um usuário ADMIN é criado automaticamente pelo `DataInitializer` na primeira execução.
+- **Usuário**: `admin` / **Senha**: definida em `ADMIN_SEED_PASSWORD` (env) — o seed com senha padrão `admin123` só é ativado no profile `dev`.
+- O `DataInitializer` cria usuários ADMIN, TI, RH, FINANCEIRO, SUPERVISOR e VISUALIZADOR na primeira execução (somente em dev; em produção use migração/IDP com senhas fortes).
 
 ## 📚 Documentação da API
 
@@ -308,13 +281,16 @@ gestao-rh-financeiro/
 - ✅ Configuração de Metas (Ex: Meta Diária de 1400)
 - ✅ Substituição dos Mocks Recharts para `TanStack Query`
 
-### Fase 5: Módulo de Auditoria, Configurações e Implantação (Semanas 33-36) ✅
+### Fase 5: Módulo de Auditoria, Configurações e Implantação (Semanas 33-36) 🚧
 - ✅ Entidade e Tabela `ParametroSistema` (Chaves Dinâmicas)
 - ✅ Injeção Dinâmica da `META_VENDAS_DIARIA` em Tela de Vendas
 - ✅ Injeção de Interceptador AOP (`@Audited`) nas Rotas de Delete e Criar
 - ✅ Painel de **Settings.tsx** (Usuários, Auditoria de Logs Seguros, e Parâmetros Front-End)
-- ✅ Testes com usuários reais finalizados
-- ✅ Deploy finalizado e Build Validado no React+Vite
+- ✅ Segurança P0/P1: CORS restrito, Actuator/Swagger protegidos, secrets obrigatórios (JWT/Jasypt), refresh token validado, seed endurecido
+- ✅ Testes unitários backend (JUnit 5 + Mockito): cálculo de rescisão, regras de comissão, JWT provider
+- ⏳ Pendente: testes de integração com Testcontainers, Vitest + RTL no frontend, Dockerfile da app + CI/CD, reativação PMD/SpotBugs/Checkstyle
+- ~~Testes com usuários reais finalizados~~ (não confirmado — cobertura ainda parcial)
+- ~~Deploy finalizado~~ (não realizado — sem Dockerfile da aplicação nem pipeline CI)
 
 ## 🔒 Segurança
 
@@ -444,7 +420,7 @@ cd frontend
 
 ---
 
-**Versão**: 1.0.0-LTS (Final Production)  
-**Última atualização**: Março 2026  
-**Status**: Fase 5 (Módulo de Auditoria, Parameters e Dashboard Configs) 100% Concluída ✅ | Homologado.  
-**Acesso**: Local, remoto e externo (Via NGROK) configurados e Estáveis 🌐
+**Versão**: 1.0.0-SNAPSHOT  
+**Última atualização**: Outubro 2026  
+**Status**: Fases 1–4 concluídas ✅ | Fase 5 em andamento 🚧 (segurança P0/P1 e testes unitários backend entregues; pendentes: CI/CD, Dockerfile da app, testes frontend, Testcontainers).  
+**Acesso**: Local (Vite na porta 3007) — deploy externo ainda não configurado.

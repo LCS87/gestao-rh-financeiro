@@ -268,8 +268,9 @@
                 </executions>
             </plugin>
 
-            <!-- PMD e SpotBugs desabilitados temporariamente (projeto em desenvolvimento) -->
-            <!--
+            <!-- PMD e SpotBugs reativados em modo gradual: rodam no verify,
+                 geram relatorio mas nao quebram o build ainda (failOnViolation=false).
+                 Meta: zerar violacoes e ligar fail-on-error na proxima release. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
@@ -285,13 +286,18 @@
                 </executions>
                 <configuration>
                     <rulesets>
-                        <ruleset>/rulesets/java/basic.xml</ruleset>
-                        <ruleset>/rulesets/java/braces.xml</ruleset>
-                        <ruleset>/rulesets/java/design.xml</ruleset>
-                        <ruleset>/rulesets/java/unusedcode.xml</ruleset>
+                        <ruleset>/rulesets/java/ali-basic.xml</ruleset>
                     </rulesets>
-                    <failOnViolation>true</failOnViolation>
+                    <printFailingErrors>true</printFailingErrors>
+                    <failOnViolation>false</failOnViolation>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.pinterest</groupId>
+                        <artifactId>p3c-pmd</artifactId>
+                        <version>2.1.1</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
@@ -309,11 +315,10 @@
                 </executions>
                 <configuration>
                     <effort>Max</effort>
-                    <threshold>Low</threshold>
-                    <failOnError>true</failOnError>
+                    <threshold>High</threshold>
+                    <failOnError>false</failOnError>
                 </configuration>
             </plugin>
-            -->
 
         </plugins>
     </build>

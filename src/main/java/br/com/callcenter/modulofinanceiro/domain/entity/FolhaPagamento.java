@@ -151,6 +151,13 @@ public class FolhaPagamento {
         this.salarioLiquido = proventos.subtract(descontos);
     }
 
+    /**
+     * Recalcula explicitamente os totais (usado pela integração de comissões da Folha).
+     */
+    public void recalcularTotais() {
+        calcularTotais();
+    }
+
     public enum StatusFolha {
         PROCESSANDO, PROCESSADA, PAGA, CANCELADA
     }

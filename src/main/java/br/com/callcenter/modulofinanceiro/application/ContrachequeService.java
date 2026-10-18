@@ -3,11 +3,20 @@ package br.com.callcenter.modulofinanceiro.application;
 import br.com.callcenter.core.exception.ResourceNotFoundException;
 import br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento;
 import br.com.callcenter.modulofinanceiro.infrastructure.repository.FolhaPagamentoRepository;
+import br.com.callcenter.modulorh.domain.entity.Cargo;
+import br.com.callcenter.modulorh.domain.entity.Departamento;
 import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.CargoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.DepartamentoRepository;
 import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.design.JRDesignBand;
+import net.sf.jasperreports.engine.design.JRDesignSection;
+import net.sf.jasperreports.engine.design.JRDesignStaticText;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.SplitTypeEnum;
 import net.sf.jasperreports.engine.util.JRLoader;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -27,11 +36,17 @@ public class ContrachequeService {
 
     private final FolhaPagamentoRepository folhaPagamentoRepository;
     private final FuncionarioRepository funcionarioRepository;
+    private final CargoRepository cargoRepository;
+    private final DepartamentoRepository departamentoRepository;
 
     public ContrachequeService(FolhaPagamentoRepository folhaPagamentoRepository,
-                               FuncionarioRepository funcionarioRepository) {
+                               FuncionarioRepository funcionarioRepository,
+                               CargoRepository cargoRepository,
+                               DepartamentoRepository departamentoRepository) {
         this.folhaPagamentoRepository = folhaPagamentoRepository;
         this.funcionarioRepository = funcionarioRepository;
+        this.cargoRepository = cargoRepository;
+        this.departamentoRepository = departamentoRepository;
     }
 
     public byte[] gerarContracheque(UUID folhaId) throws Exception {
@@ -44,8 +59,8 @@ public class ContrachequeService {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("FUNCIONARIO_NOME", funcionario.getNome());
         parameters.put("FUNCIONARIO_CPF", funcionario.getCpf());
-        parameters.put("FUNCIONARIO_CARGO", "");
-        parameters.put("FUNCIONARIO_DEPARTAMENTO", "");
+        parameters.put("FUNCIONARIO_CARGO", resolverCargo(funcionario));
+        parameters.put("FUNCIONARIO_DEPARTAMENTO", resolverDepartamento(funcionario));
         parameters.put("MES_ANO", formatarMesAno(folha.getAnoMes()));
         parameters.put("DATA_EMISSAO", LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         parameters.put("SALARIO_BASE", formatarMoeda(folha.getSalarioBase()));
@@ -109,40 +124,133 @@ public class ContrachequeService {
         }
     }
 
-    private byte[] gerarPdfSimplificado(Map<String, Object> parameters) {
-        // Gera um PDF básico em memória como fallback
-        String htmlContent = gerarHtmlContracheque(parameters);
-        
-        // Aqui você poderia usar uma biblioteca como iText ou Flying Saucer
-        // Por enquanto, retorna um placeholder
-        String content = "CONTRACHEQUE\n\n" +
-                "Funcionário: " + parameters.get("FUNCIONARIO_NOME") + "\n" +
-                "CPF: " + parameters.get("FUNCIONARIO_CPF") + "\n" +
-                "Mês/Ano: " + parameters.get("MES_ANO") + "\n" +
-                "Salário Base: " + parameters.get("SALARIO_BASE") + "\n" +
-                "Total Proventos: " + parameters.get("TOTAL_PROVENTOS") + "\n" +
-                "Total Descontos: " + parameters.get("TOTAL_DESCONTOS") + "\n" +
-                "Salário Líquido: " + parameters.get("SALARIO_LIQUIDO") + "\n";
-        
-        return content.getBytes();
+    private String resolverCargo(Funcionario funcionario) {
+        if (funcionario.getCargoId() == null) return "";
+        try {
+            return cargoRepository.findById(funcionario.getCargoId())
+                    .map(Cargo::getNome)
+                    .orElse("");
+        } catch (Exception e) {
+            log.warn("Não foi possível resolver o cargo do funcionário {}", funcionario.getId(), e);
+            return "";
+        }
     }
 
-    private String gerarHtmlContracheque(Map<String, Object> parameters) {
-        return "<html><head><title>Contracheque</title></head><body>" +
-                "<h1>Contracheque</h1>" +
-                "<p><strong>Funcionário:</strong> " + parameters.get("FUNCIONARIO_NOME") + "</p>" +
-                "<p><strong>CPF:</strong> " + parameters.get("FUNCIONARIO_CPF") + "</p>" +
-                "<p><strong>Mês/Ano:</strong> " + parameters.get("MES_ANO") + "</p>" +
-                "<h2>Proventos</h2>" +
-                "<p>Salário Base: " + parameters.get("SALARIO_BASE") + "</p>" +
-                "<p>Total Proventos: " + parameters.get("TOTAL_PROVENTOS") + "</p>" +
-                "<h2>Descontos</h2>" +
-                "<p>INSS: " + parameters.get("INSS") + "</p>" +
-                "<p>IRRF: " + parameters.get("IRRF") + "</p>" +
-                "<p>Total Descontos: " + parameters.get("TOTAL_DESCONTOS") + "</p>" +
-                "<h2>Total</h2>" +
-                "<p><strong>Salário Líquido: " + parameters.get("SALARIO_LIQUIDO") + "</strong></p>" +
-                "</body></html>";
+    private String resolverDepartamento(Funcionario funcionario) {
+        if (funcionario.getDepartamentoId() == null) return "";
+        try {
+            return departamentoRepository.findById(funcionario.getDepartamentoId())
+                    .map(Departamento::getNome)
+                    .orElse("");
+        } catch (Exception e) {
+            log.warn("Não foi possível resolver o departamento do funcionário {}", funcionario.getId(), e);
+            return "";
+        }
+    }
+
+    private byte[] gerarPdfSimplificado(Map<String, Object> parameters) throws Exception {
+        // Fallback: gera um PDF real em memória construindo o relatório dinamicamente
+        // via JasperReports (sem depender de arquivo .jasper/.jrxml no classpath).
+        JasperDesign design = new JasperDesign();
+        design.setName("ContrachequeFallback");
+        design.setPageWidth(595);   // A4 em pontos
+        design.setPageHeight(842);
+        design.setColumnWidth(555);
+        design.setLeftMargin(20);
+        design.setRightMargin(20);
+        design.setTopMargin(20);
+        design.setBottomMargin(20);
+
+        JRDesignBand titleBand = new JRDesignBand();
+        titleBand.setHeight(30);
+        titleBand.addElement(staticText(0, 5, 555, 20, "CONTRACHEQUE - DEMONSTRATIVO DE PAGAMENTO", true));
+        design.setTitle(titleBand);
+
+        JRDesignBand detailBand = new JRDesignBand();
+        detailBand.setHeight(16);
+        int y = 0;
+        String[][] secoes = {
+                {"IDENTIFICACAO", "FUNCIONARIO_NOME", "FUNCIONARIO_CPF", "FUNCIONARIO_CARGO",
+                        "FUNCIONARIO_DEPARTAMENTO", "MES_ANO", "DATA_EMISSAO"},
+                {"PROVENTOS", "SALARIO_BASE", "HORAS_EXTRAS", "ADICIONAL_NOTURNO", "COMISSOES",
+                        "BONUS", "FERIAS", "DECIMO_TERCEIRO", "OUTROS_PROVENTOS", "TOTAL_PROVENTOS"},
+                {"DESCONTOS", "INSS", "IRRF", "FGTS", "VALE_TRANSPORTE", "VALE_REFEICAO",
+                        "PLANO_SAUDE", "OUTROS_DESCONTOS", "TOTAL_DESCONTOS"},
+                {"LIQUIDO", "SALARIO_LIQUIDO"}
+        };
+        for (String[] secao : secoes) {
+            detailBand.addElement(staticText(0, y, 555, 14, secao[0], true));
+            y += 14;
+            for (int i = 1; i < secao.length; i++) {
+                Object v = parameters.get(secao[i]);
+                if (v != null && !v.toString().isEmpty()) {
+                    detailBand.addElement(staticText(10, y, 545, 14,
+                            rotulo(secao[i]) + ": " + v, false));
+                    y += 14;
+                }
+            }
+            y += 6;
+        }
+        detailBand.setSplitType(SplitTypeEnum.STRETCH);
+
+        // JasperReports 6.x não expõe setDetailSection público no JasperDesign;
+        // usamos reflection para injetar a seção de detalhe (fallback controlado).
+        JRDesignSection detailSection = new JRDesignSection(null);
+        detailSection.addBand(detailBand);
+        java.lang.reflect.Field detailField =
+                net.sf.jasperreports.engine.base.JRBaseReport.class.getDeclaredField("detailSection");
+        detailField.setAccessible(true);
+        detailField.set(design, detailSection);
+
+        // Os valores já estão embutidos como staticText no band, então o preenchimento
+        // usa fonte vazia e produz um PDF real do demonstrativo.
+        JasperReport jasperReport = JasperCompileManager.compileReport(design);
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, null, new JREmptyDataSource(1));
+        return JasperExportManager.exportReportToPdf(jasperPrint);
+    }
+
+    private JRDesignStaticText staticText(int x, int y, int width, int height, String text, boolean bold) {
+        JRDesignStaticText staticText = new JRDesignStaticText();
+        staticText.setX(x);
+        staticText.setY(y);
+        staticText.setWidth(width);
+        staticText.setHeight(height);
+        staticText.setText(text);
+        staticText.setFontSize(bold ? 11f : 9f);
+        if (bold) {
+            staticText.setBold(Boolean.TRUE);
+        }
+        return staticText;
+    }
+
+    private String rotulo(String chave) {
+        switch (chave) {
+            case "FUNCIONARIO_NOME": return "Funcionario";
+            case "FUNCIONARIO_CPF": return "CPF";
+            case "FUNCIONARIO_CARGO": return "Cargo";
+            case "FUNCIONARIO_DEPARTAMENTO": return "Departamento";
+            case "MES_ANO": return "Mes/Ano";
+            case "DATA_EMISSAO": return "Emissao";
+            case "SALARIO_BASE": return "Salario Base";
+            case "HORAS_EXTRAS": return "Horas Extras";
+            case "ADICIONAL_NOTURNO": return "Adicional Noturno";
+            case "COMISSOES": return "Comissoes";
+            case "BONUS": return "Bonus";
+            case "FERIAS": return "Ferias";
+            case "DECIMO_TERCEIRO": return "13o Salario";
+            case "OUTROS_PROVENTOS": return "Outros Proventos";
+            case "TOTAL_PROVENTOS": return "Total Proventos";
+            case "INSS": return "INSS";
+            case "IRRF": return "IRRF";
+            case "FGTS": return "FGTS";
+            case "VALE_TRANSPORTE": return "Vale Transporte";
+            case "VALE_REFEICAO": return "Vale Refeicao";
+            case "PLANO_SAUDE": return "Plano de Saude";
+            case "OUTROS_DESCONTOS": return "Outros Descontos";
+            case "TOTAL_DESCONTOS": return "Total Descontos";
+            case "SALARIO_LIQUIDO": return "SALARIO LIQUIDO";
+            default: return chave;
+        }
     }
 
     private String formatarMesAno(String anoMes) {

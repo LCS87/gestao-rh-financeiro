@@ -1,6 +1,8 @@
 package br.com.callcenter.modulofinanceiro.application;
 
 import br.com.callcenter.core.exception.ResourceNotFoundException;
+import br.com.callcenter.modulo_comissoes.api.dto.ApuracaoComissaoResponse;
+import br.com.callcenter.modulo_comissoes.application.ComissaoService;
 import br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento;
 import br.com.callcenter.modulofinanceiro.infrastructure.repository.FolhaPagamentoRepository;
 import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
@@ -23,13 +25,16 @@ public class FolhaPagamentoService {
     private final FolhaPagamentoRepository folhaPagamentoRepository;
     private final CalculoFolhaService calculoFolhaService;
     private final FuncionarioRepository funcionarioRepository;
+    private final ComissaoService comissaoService;
 
     public FolhaPagamentoService(FolhaPagamentoRepository folhaPagamentoRepository,
                                  CalculoFolhaService calculoFolhaService,
-                                 FuncionarioRepository funcionarioRepository) {
+                                 FuncionarioRepository funcionarioRepository,
+                                 ComissaoService comissaoService) {
         this.folhaPagamentoRepository = folhaPagamentoRepository;
         this.calculoFolhaService = calculoFolhaService;
         this.funcionarioRepository = funcionarioRepository;
+        this.comissaoService = comissaoService;
     }
 
     public List<FolhaPagamento> listarTodas() {
@@ -189,6 +194,43 @@ public class FolhaPagamentoService {
     public BigDecimal calcularTotalFolha(YearMonth anoMes) {
         Double total = folhaPagamentoRepository.sumTotalPagoNoMes(anoMes.format(DateTimeFormatter.ofPattern("yyyy-MM")));
         return total != null ? BigDecimal.valueOf(total) : BigDecimal.ZERO;
+    }
+
+    /**
+     * Integração automática da apuração de comissões na Folha de Pagamento (Fase 4).
+     * Consolida o total de comissões apurado no mês (via ComissaoService.apurarComissoesMes)
+     * no campo "comissoes" da folha de cada funcionário, apenas para folhas ainda não pagas.
+     * O valor apurado substitui a comissão anterior (reapuração idempotente) e os totais
+     * (proventos/descontos/salário líquido) são recalculados pela própria entidade.
+     */
+    public int aplicarComissoesNaFolha(String mesReferencia) {
+        ApuracaoComissaoResponse apuracao = comissaoService.apurarComissoesMes(mesReferencia);
+        int aplicadas = 0;
+
+        for (ApuracaoComissaoResponse.ApuracaoPorFuncionario item : apuracao.getFuncionarios()) {
+            FolhaPagamento folha = folhaPagamentoRepository.findByFuncionarioEAnoMes(
+                    item.getFuncionarioId(), mesReferencia);
+
+            if (folha == null) {
+                log.warn("Folha {} não encontrada para o funcionário {} — comissão de R$ {} não aplicada",
+                        mesReferencia, item.getFuncionarioId(), item.getTotalComissoes());
+                continue;
+            }
+            if (folha.getStatus() == FolhaPagamento.StatusFolha.PAGA) {
+                log.info("Folha {} do funcionário {} já está paga — comissão não reaplicada",
+                        mesReferencia, item.getFuncionarioId());
+                continue;
+            }
+
+            folha.setComissoes(item.getTotalComissoes());
+            folha.recalcularTotais();
+            folhaPagamentoRepository.save(folha);
+            aplicadas++;
+        }
+
+        log.info("Apuração de comissões {}: {} folhas atualizadas, total R$ {}",
+                mesReferencia, aplicadas, apuracao.getTotalGeralComissoes());
+        return aplicadas;
     }
 
     public Long contarProcessandoNoMes(YearMonth anoMes) {

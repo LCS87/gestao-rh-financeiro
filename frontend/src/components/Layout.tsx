@@ -25,6 +25,8 @@ import {
   Clock,
   CalendarDays,
   ClipboardList,
+  Percent,
+  FileBarChart2,
 } from 'lucide-react';
 
 // Reusable loading spinner component
@@ -178,6 +180,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: <DollarSign className="w-5 h-5" />,
       label: 'Vendas',
       requiredLevel: 'user',
+    },
+    {
+      to: '/comissoes',
+      icon: <Percent className="w-5 h-5 text-emerald-400" />,
+      label: 'Comissões',
+      requiredLevel: 'supervisor',
+    },
+    {
+      to: '/relatorios',
+      icon: <FileBarChart2 className="w-5 h-5 text-cyan-400" />,
+      label: 'Relatórios',
+      requiredLevel: 'financeiro',
     },
     {
       to: '/settings',

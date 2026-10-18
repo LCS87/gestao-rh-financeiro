@@ -21,6 +21,8 @@ import { Holerites } from './pages/Holerites';
 import { LoginPage } from './pages/LoginPage';
 import Mural from './pages/Mural';
 import { Ponto } from './pages/Ponto';
+import { Comissoes } from './pages/Comissoes';
+import { Relatorios } from './pages/Relatorios';
 import SettingsPage from './pages/Settings';
 import { VendasPage } from './pages/Vendas';
 
@@ -180,6 +182,26 @@ function App() {
                     <ProtectedRoute requiredLevel="rh">
                       <Layout>
                         <AdmissoesDemissoes />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/comissoes"
+                  element={
+                    <ProtectedRoute requiredLevel="supervisor">
+                      <Layout>
+                        <Comissoes />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/relatorios"
+                  element={
+                    <ProtectedRoute requiredLevel="financeiro">
+                      <Layout>
+                        <Relatorios />
                       </Layout>
                     </ProtectedRoute>
                   }

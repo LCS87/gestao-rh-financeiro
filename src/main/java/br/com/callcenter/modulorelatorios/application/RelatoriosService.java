@@ -3,13 +3,18 @@ package br.com.callcenter.modulorelatorios.application;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.AfastamentoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
 import br.com.callcenter.modulofinanceiro.domain.entity.ContaPagar;
 import br.com.callcenter.modulofinanceiro.domain.entity.ContaReceber;
+import br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento;
 import br.com.callcenter.modulofinanceiro.infrastructure.repository.ContaPagarRepository;
 import br.com.callcenter.modulofinanceiro.infrastructure.repository.ContaReceberRepository;
 import br.com.callcenter.modulofinanceiro.infrastructure.repository.FolhaPagamentoRepository;
@@ -30,6 +35,8 @@ public class RelatoriosService {
     private final FolhaPagamentoRepository folhaPagamentoRepository;
     private final DRERepository dreRepository;
     private final FluxoCaixaRepository fluxoCaixaRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final AfastamentoRepository afastamentoRepository;
 
     // Gera DRE mensalmente
     @Transactional
@@ -78,8 +85,11 @@ public class RelatoriosService {
         Double lucroBruto = receitaTotal - custoVendas;
 
         // Despesas Operacionais
-        // Folha de pagamento (custo operacional principal) - placeholder
-        Double despesasFolha = 0.0;
+        // Folha de pagamento (custo operacional principal) — real: somas dos proventos do mês
+        Double despesasFolha = folhaPagamentoRepository.findByAnoMes(periodo).stream()
+                .mapToDouble(f -> f.getTotalProventos() != null
+                        ? f.getTotalProventos().doubleValue() : 0.0)
+                .sum();
 
         // Contas a pagar (despesas administrativas, comerciais, etc.)
         List<ContaPagar> contasPagar = contaPagarRepository.findByPeriodo(periodo);
@@ -200,10 +210,134 @@ public class RelatoriosService {
         return fluxoCaixaRepository.findByPeriodo(periodo);
     }
 
-    // Saldo atual (último salário líquido + contas a receber - contas a pagar)
+    // Saldo atual (última folha paga + entradas confirmadas - saídas confirmadas)
     @Transactional(readOnly = true)
     public Double getSaldoAtual() {
-        // Placeholder - em produção, calcular saldo real
-        return 0.0;
+        String mesAtual = YearMonth.now().toString();
+
+        Double totalFolhaPaga = folhaPagamentoRepository.sumTotalPagoNoMes(mesAtual);
+        if (totalFolhaPaga == null) {
+            totalFolhaPaga = 0.0;
+        }
+
+        Double entradasPagas = contaReceberRepository.findByPeriodo(mesAtual).stream()
+                .filter(c -> c.getStatus() != null && "PAGO".equals(c.getStatus().name()))
+                .mapToDouble(c -> c.getValorTotal().doubleValue())
+                .sum();
+
+        Double saidasPagas = contaPagarRepository.findByPeriodo(mesAtual).stream()
+                .filter(c -> c.getStatus() != null && "PAGO".equals(c.getStatus().name()))
+                .mapToDouble(c -> c.getValorTotal().doubleValue())
+                .sum();
+
+        return entradasPagas - saidasPagas - totalFolhaPaga;
+    }
+
+    // --- Relatórios gerenciais (Fase 4) ---
+
+    /**
+     * Extrato de provisões financeiras da folha no mês: FGTS, INSS, 13º e férias provisionados.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> extratoProvisoesFolha(String periodo) {
+        List<FolhaPagamento> folhas = folhaPagamentoRepository.findByAnoMes(periodo);
+
+        double fgts = folhas.stream()
+                .mapToDouble(f -> f.getFgts() != null ? f.getFgts().doubleValue() : 0.0).sum();
+        double inss = folhas.stream()
+                .mapToDouble(f -> f.getInss() != null ? f.getInss().doubleValue() : 0.0).sum();
+        double decimoTerceiro = folhas.stream()
+                .mapToDouble(f -> f.getDecimoTerceiro() != null ? f.getDecimoTerceiro().doubleValue() : 0.0).sum();
+        double ferias = folhas.stream()
+                .mapToDouble(f -> f.getFerias() != null ? f.getFerias().doubleValue() : 0.0).sum();
+        double comissoes = folhas.stream()
+                .mapToDouble(f -> f.getComissoes() != null ? f.getComissoes().doubleValue() : 0.0).sum();
+        double totalProventos = folhas.stream()
+                .mapToDouble(f -> f.getTotalProventos() != null ? f.getTotalProventos().doubleValue() : 0.0).sum();
+
+        // Encargos trabalhistas estimados sobre folha (INSS patronal 20% + sistema S/FAT ~5,8%)
+        double encargosEstimados = totalProventos * 0.258;
+
+        return java.util.Map.of(
+                "periodo", periodo,
+                "quantidadeFolhas", folhas.size(),
+                "provisaoFGTS", round2(fgts),
+                "provisaoINSS", round2(inss),
+                "provisaoDecimoTerceiro", round2(decimoTerceiro),
+                "provisaoFerias", round2(ferias),
+                "comissoesAPagar", round2(comissoes),
+                "encargosEstimados", round2(encargosEstimados),
+                "totalProvisionado", round2(fgts + inss + decimoTerceiro + ferias + encargosEstimados));
+    }
+
+    /**
+     * Turnover e absenteísmo por departamento no período (mês YYYY-MM).
+     */
+    @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> turnoverAbsenteismoPorDepartamento(String periodo) {
+        LocalDate inicio = LocalDate.parse(periodo + "-01");
+        LocalDate fim = inicio.plusMonths(1).minusDays(1);
+        long diasUteisNoMes = 22; // aproximação comercial
+
+        List<Funcionario> todos = funcionarioRepository.findAll();
+
+        // agrupar por departamentoId
+        java.util.Map<UUID, List<Funcionario>> porDepto = todos.stream()
+                .filter(f -> f.getDepartamentoId() != null)
+                .collect(java.util.stream.Collectors.groupingBy(Funcionario::getDepartamentoId));
+
+        List<AfastamentoParaRelatorio> afastamentos = listarAfastamentosNoPeriodo(inicio, fim);
+
+        return porDepto.entrySet().stream().map(entry -> {
+            List<Funcionario> membros = entry.getValue();
+            long ativosInicio = membros.stream()
+                    .filter(f -> f.getDataAdmissao() != null && !f.getDataAdmissao().isAfter(fim))
+                    .count();
+            long desligados = membros.stream()
+                    .filter(f -> f.getDataDemissao() != null
+                            && !f.getDataDemissao().isBefore(inicio)
+                            && !f.getDataDemissao().isAfter(fim))
+                    .count();
+
+            // dias de afastamento dos membros do departamento que iniciaram afastamento no período
+            java.util.Set<UUID> idsMembros = membros.stream().map(Funcionario::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+            long diasAfastamento = afastamentos.stream()
+                    .filter(a -> idsMembros.contains(a.funcionarioId))
+                    .mapToLong(a -> a.dias)
+                    .sum();
+
+            double turnover = ativosInicio > 0
+                    ? round2(desligados * 100.0 / ativosInicio) : 0.0;
+            double absenteismo = (ativosInicio * diasUteisNoMes) > 0
+                    ? round2(diasAfastamento * 100.0 / (ativosInicio * diasUteisNoMes)) : 0.0;
+
+            return java.util.Map.<String, Object>of(
+                    "departamentoId", entry.getKey(),
+                    "totalFuncionarios", membros.size(),
+                    "desligadosNoPeriodo", desligados,
+                    "turnoverPercent", turnover,
+                    "diasAfastamento", diasAfastamento,
+                    "absenteismoPercent", absenteismo);
+        }).toList();
+    }
+
+    private record AfastamentoParaRelatorio(UUID funcionarioId, long dias) {}
+
+    private List<AfastamentoParaRelatorio> listarAfastamentosNoPeriodo(LocalDate inicio, LocalDate fim) {
+        return afastamentoRepository.findAll().stream()
+                .filter(a -> a.getDataInicio() != null && !a.getDataInicio().isAfter(fim))
+                .filter(a -> a.getDataFim() != null && !a.getDataFim().isBefore(inicio))
+                .map(a -> {
+                    LocalDate efetivoInicio = a.getDataInicio().isBefore(inicio) ? inicio : a.getDataInicio();
+                    LocalDate efetivoFim = a.getDataFim().isAfter(fim) ? fim : a.getDataFim();
+                    long dias = java.time.temporal.ChronoUnit.DAYS.between(efetivoInicio, efetivoFim) + 1;
+                    return new AfastamentoParaRelatorio(a.getFuncionarioId(), Math.max(dias, 0));
+                })
+                .toList();
+    }
+
+    private static double round2(double v) {
+        return java.math.BigDecimal.valueOf(v).setScale(2, java.math.RoundingMode.HALF_UP).doubleValue();
     }
 }

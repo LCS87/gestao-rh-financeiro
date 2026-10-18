@@ -93,6 +93,13 @@ public class FolhaPagamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @PostMapping("/aplicar-comissoes/{mesReferencia}")
+    @PreAuthorize("hasAnyRole('ADMIN','FINANCEIRO','RH')")
+    public ResponseEntity<String> aplicarComissoesNaFolha(@PathVariable String mesReferencia) {
+        int aplicadas = folhaPagamentoService.aplicarComissoesNaFolha(mesReferencia);
+        return ResponseEntity.ok(aplicadas + " folha(s) atualizada(s) com as comissões apuradas de " + mesReferencia);
+    }
+
     @PostMapping("/{id}/processar")
     @PreAuthorize("hasAnyRole('ADMIN','FINANCEIRO','RH')")
     public ResponseEntity<FolhaPagamento> processarFolha(

@@ -29,7 +29,7 @@ public class VendaController {
 
     @PostMapping
     @Operation(summary = "Registrar nova venda")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VISUALIZADOR')")
     public ResponseEntity<VendaDto> registrarVenda(@RequestBody NovaVendaRequest request) {
         VendaDto venda = vendaService.registrarVenda(request.sellerId(), request.amount());
         return ResponseEntity.status(HttpStatus.CREATED).body(venda);
@@ -44,14 +44,14 @@ public class VendaController {
 
     @GetMapping("/resumo-mensal")
     @Operation(summary = "Resumo global do Dashboard (Total Mensal, Semanal, Diário)")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'USER', 'FINANCEIRO', 'RH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VISUALIZADOR', 'FINANCEIRO', 'RH')")
     public ResponseEntity<ResumoVendasDto> getResumoMensal() {
         return ResponseEntity.ok(vendaService.getResumoVendas());
     }
 
     @GetMapping("/ranking-diario")
     @Operation(summary = "Ranking entre os vendedores e Meta base Diária cruzada")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'USER', 'FINANCEIRO', 'RH')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISOR', 'VISUALIZADOR', 'FINANCEIRO', 'RH')")
     public ResponseEntity<List<RankingVendedorDto>> getRankingDiario() {
         return ResponseEntity.ok(vendaService.getRankingDiario());
     }
@@ -65,7 +65,7 @@ public class VendaController {
 
     @GetMapping("/historico-pessoal/{id}")
     @Operation(summary = "Gráfico Recharts: Histórico diário pessoal de vendas")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPERVISOR', 'TI')")
+    @PreAuthorize("hasAnyRole('VISUALIZADOR', 'ADMIN', 'SUPERVISOR', 'TI')")
     public ResponseEntity<List<HistoricoVendasDto>> getHistoricoPessoal(@PathVariable UUID id, @RequestParam(defaultValue = "30") int dias) {
         return ResponseEntity.ok(vendaService.getHistoricoPessoal(id, dias));
     }

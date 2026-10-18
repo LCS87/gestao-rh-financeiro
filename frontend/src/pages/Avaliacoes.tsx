@@ -37,7 +37,7 @@ export default function Avaliacoes() {
   const { data: ciclos } = useQuery({
     queryKey: ['ciclos'],
     queryFn: async () => {
-      const { data } = await api.get<Ciclo[]>('/api/avaliacao/ciclos');
+      const { data } = await api.get<Ciclo[]>('/api/ciclos-avaliacao');
       return data;
     },
     enabled: hasPermission('rh') || hasPermission('admin'),

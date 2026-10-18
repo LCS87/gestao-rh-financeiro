@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.callcenter.modulo_comissoes.api.dto.ApuracaoComissaoResponse;
+import br.com.callcenter.modulo_comissoes.api.dto.SimulacaoComissaoRequest;
 import br.com.callcenter.modulo_comissoes.application.ComissaoService;
 import br.com.callcenter.modulo_comissoes.domain.entity.Meta;
 import br.com.callcenter.modulo_comissoes.domain.entity.RegraComissao;
@@ -84,6 +86,30 @@ public class ComissaoController {
     public ResponseEntity<Void> pagarComissao(@PathVariable UUID vendaComissaoId) {
         comissaoService.pagarComissao(vendaComissaoId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/regras/{regraId}/simular")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','FINANCEIRO','SUPERVISOR')")
+    public ResponseEntity<BigDecimal> simularComissao(
+            @PathVariable UUID regraId,
+            @RequestBody SimulacaoComissaoRequest request) {
+        BigDecimal valor = comissaoService.simularComissao(
+                regraId, request.getValorVenda(), request.getPercentualMeta());
+        return ResponseEntity.ok(valor);
+    }
+
+    @GetMapping("/apuracao")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','FINANCEIRO','SUPERVISOR')")
+    public ResponseEntity<ApuracaoComissaoResponse> apurarComissoesMes(
+            @RequestParam String mesReferencia) {
+        return ResponseEntity.ok(comissaoService.apurarComissoesMes(mesReferencia));
+    }
+
+    @PostMapping("/apuracao/{mesReferencia}/aplicar-folha")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','FINANCEIRO')")
+    public ResponseEntity<String> aplicarComissoesNaFolha(@PathVariable String mesReferencia) {
+        int aplicadas = comissaoService.aplicarComissoesNaFolha(mesReferencia);
+        return ResponseEntity.ok("Comissões aplicadas em " + aplicadas + " folha(s) do mês " + mesReferencia);
     }
 
     // --- Metas ---

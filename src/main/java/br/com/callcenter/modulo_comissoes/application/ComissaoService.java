@@ -1,7 +1,12 @@
 package br.com.callcenter.modulo_comissoes.application;
 
+import br.com.callcenter.modulo_comissoes.api.dto.ApuracaoComissaoResponse;
 import br.com.callcenter.modulo_comissoes.domain.entity.*;
 import br.com.callcenter.modulo_comissoes.domain.repository.*;
+import br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento;
+import br.com.callcenter.modulofinanceiro.infrastructure.repository.FolhaPagamentoRepository;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.VendaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +28,8 @@ public class ComissaoService {
     private final VendaComissaoRepository vendaComissaoRepository;
     private final ComissaoPagaRepository comissaoPagaRepository;
     private final MetaFuncionarioRepository metaFuncionarioRepository;
+    private final VendaRepository vendaRepository;
+    private final FolhaPagamentoRepository folhaRepository;
 
     // --- Regras de Comissão ---
 
@@ -57,6 +64,8 @@ public class ComissaoService {
             regra.setValorFixo(regraAtualizada.getValorFixo());
             regra.setValorMinimo(regraAtualizada.getValorMinimo());
             regra.setValorMaximo(regraAtualizada.getValorMaximo());
+            regra.setAceleradorPercentual(regraAtualizada.getAceleradorPercentual());
+            regra.setMetaMinimaPercentual(regraAtualizada.getMetaMinimaPercentual());
             regra.setAplicarPorDepartamento(regraAtualizada.getAplicarPorDepartamento());
             regra.setDepartamento(regraAtualizada.getDepartamento());
             return regraComissaoRepository.save(regra);
@@ -78,30 +87,119 @@ public class ComissaoService {
     public VendaComissao calcularComissaoVenda(UUID vendaId, UUID regraComissaoId) {
         log.debug("Calculando comissão para venda {} com regra {}", vendaId, regraComissaoId);
 
-        // Buscar venda e regra
-        var venda = new br.com.callcenter.modulorh.domain.entity.Venda();
-        // Na prática, você buscaria a venda do repositório de vendas
-        // venda = vendaRepository.findById(vendaId).orElseThrow(...);
+        br.com.callcenter.modulorh.domain.entity.Venda venda = vendaRepository.findById(vendaId)
+                .orElseThrow(() -> new IllegalArgumentException("Venda não encontrada: " + vendaId));
 
-        var regra = regraComissaoRepository.findById(regraComissaoId)
+        RegraComissao regra = regraComissaoRepository.findById(regraComissaoId)
                 .orElseThrow(() -> new IllegalArgumentException("Regra de comissão não encontrada"));
 
-        // Buscar funcionário da venda (vendedor)
-        // Funcionario vendedor = venda.getVendedor();
-
-        // Calcular valor da comissão
+        Funcionario vendedor = venda.getVendedor();
         BigDecimal valorComissao = regra.calcularComissao(venda.getValor());
 
-        // Criar venda com comissão
         VendaComissao vendaComissao = new VendaComissao();
         vendaComissao.setVenda(venda);
         vendaComissao.setRegraComissao(regra);
-        // vendaComissao.setFuncionario(vendedor);
+        vendaComissao.setFuncionario(vendedor);
         vendaComissao.setValorVenda(venda.getValor());
         vendaComissao.setValorComissao(valorComissao);
         vendaComissao.setStatusPagamento(StatusPagamento.PENDENTE);
 
         return vendaComissaoRepository.save(vendaComissao);
+    }
+
+    /**
+     * Simulação de comissão sem persistir (Fase 4 — parametrização de faixas/aceleradores).
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal simularComissao(UUID regraComissaoId, BigDecimal valorVenda, BigDecimal percentualMeta) {
+        RegraComissao regra = regraComissaoRepository.findById(regraComissaoId)
+                .orElseThrow(() -> new IllegalArgumentException("Regra de comissão não encontrada"));
+        if (valorVenda == null) {
+            throw new IllegalArgumentException("Informe o valor da venda para simulação");
+        }
+        return regra.simularComissao(valorVenda, percentualMeta);
+    }
+
+    /**
+     * Apuração mensal consolidada de comissões por funcionário (integração à Folha).
+     */
+    @Transactional(readOnly = true)
+    public ApuracaoComissaoResponse apurarComissoesMes(String mesReferencia) {
+        LocalDateTime inicio = LocalDate.parse(mesReferencia + "-01").atStartOfDay();
+        LocalDateTime fim = inicio.plusMonths(1);
+
+        List<VendaComissao> noPeriodo = vendaComissaoRepository.findByDataCriacaoBetween(inicio, fim);
+
+        java.util.Map<UUID, List<VendaComissao>> porFuncionario = noPeriodo.stream()
+                .filter(v -> v.getFuncionario() != null)
+                .collect(java.util.stream.Collectors.groupingBy(v -> v.getFuncionario().getId()));
+
+        List<ApuracaoComissaoResponse.ApuracaoPorFuncionario> funcionarios = porFuncionario.entrySet().stream()
+                .map(entry -> {
+                    List<VendaComissao> vendas = entry.getValue();
+                    VendaComissao primeira = vendas.get(0);
+                    return ApuracaoComissaoResponse.ApuracaoPorFuncionario.builder()
+                            .funcionarioId(entry.getKey())
+                            .nomeFuncionario(primeira.getFuncionario().getNome())
+                            .departamentoId(primeira.getFuncionario().getDepartamentoId())
+                            .totalVendas(vendas.stream().map(VendaComissao::getValorVenda)
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
+                            .totalComissoes(vendas.stream().map(VendaComissao::getValorComissao)
+                                    .reduce(BigDecimal.ZERO, BigDecimal::add))
+                            .quantidadeVendas(vendas.size())
+                            .build();
+                })
+                .sorted(java.util.Comparator.comparing(
+                        ApuracaoComissaoResponse.ApuracaoPorFuncionario::getTotalComissoes,
+                        java.util.Comparator.reverseOrder()))
+                .toList();
+
+        BigDecimal totalGeral = funcionarios.stream()
+                .map(ApuracaoComissaoResponse.ApuracaoPorFuncionario::getTotalComissoes)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return ApuracaoComissaoResponse.builder()
+                .mesReferencia(mesReferencia)
+                .totalGeralComissoes(totalGeral)
+                .quantidadeVendas(noPeriodo.size())
+                .funcionarios(funcionarios)
+                .build();
+    }
+
+    /**
+     * Aplica a apuração de comissões do mês no campo "comissoes" da Folha de Pagamento
+     * de cada funcionário (apenas folhas ainda não pagas). Os totais da folha são
+     * recalculados automaticamente pelo @PreUpdate da entidade.
+     */
+    @Transactional
+    public int aplicarComissoesNaFolha(String mesReferencia) {
+        ApuracaoComissaoResponse apuracao = apurarComissoesMes(mesReferencia);
+
+        List<br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento> folhas =
+                folhaRepository.findByAnoMes(mesReferencia);
+        java.util.Map<UUID, BigDecimal> comissoesPorFuncionario = apuracao.getFuncionarios().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        ApuracaoComissaoResponse.ApuracaoPorFuncionario::getFuncionarioId,
+                        ApuracaoComissaoResponse.ApuracaoPorFuncionario::getTotalComissoes));
+
+        int aplicadas = 0;
+        for (br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento folha : folhas) {
+            if (folha.getStatus() == br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento.StatusFolha.PAGA
+                    || folha.getStatus() == br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento.StatusFolha.CANCELADA) {
+                continue;
+            }
+            BigDecimal total = comissoesPorFuncionario.get(folha.getFuncionarioId());
+            if (total == null) {
+                continue; // sem comissões apuradas: não sobrescreve valor existente
+            }
+            folha.setComissoes(total);
+            folhaRepository.save(folha);
+            aplicadas++;
+        }
+
+        log.info("Comissões de {} aplicadas em {} folha(s) do mês {}", apuracao.getTotalGeralComissoes(),
+                aplicadas, mesReferencia);
+        return aplicadas;
     }
 
     @Transactional

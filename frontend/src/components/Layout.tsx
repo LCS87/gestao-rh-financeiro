@@ -18,6 +18,15 @@ import {
   Wallet,
   FileText,
   Palmtree,
+  FolderOpen,
+  Star,
+  Megaphone,
+  Gift,
+  Clock,
+  CalendarDays,
+  ClipboardList,
+  Percent,
+  FileBarChart2,
 } from 'lucide-react';
 
 // Reusable loading spinner component
@@ -125,10 +134,64 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       requiredLevel: 'rh',
     },
     {
+      to: '/ponto',
+      icon: <Clock className="w-5 h-5 text-teal-400" />,
+      label: 'Ponto Eletrônico',
+      requiredLevel: 'supervisor',
+    },
+    {
+      to: '/escalas',
+      icon: <CalendarDays className="w-5 h-5 text-violet-400" />,
+      label: 'Escalas',
+      requiredLevel: 'supervisor',
+    },
+    {
+      to: '/admissoes-demissoes',
+      icon: <ClipboardList className="w-5 h-5 text-rose-400" />,
+      label: 'Admissão/Demissão',
+      requiredLevel: 'rh',
+    },
+    {
+      to: '/documentos',
+      icon: <FolderOpen className="w-5 h-5 text-cyan-400" />,
+      label: 'Documentos',
+      requiredLevel: 'rh',
+    },
+    {
+      to: '/avaliacoes',
+      icon: <Star className="w-5 h-5 text-yellow-400" />,
+      label: 'Avaliações',
+      requiredLevel: 'rh',
+    },
+    {
+      to: '/beneficios',
+      icon: <Gift className="w-5 h-5 text-pink-400" />,
+      label: 'Benefícios',
+      requiredLevel: 'rh',
+    },
+    {
+      to: '/mural',
+      icon: <Megaphone className="w-5 h-5 text-indigo-400" />,
+      label: 'Mural',
+      requiredLevel: 'user',
+    },
+    {
       to: '/sales',
       icon: <DollarSign className="w-5 h-5" />,
       label: 'Vendas',
       requiredLevel: 'user',
+    },
+    {
+      to: '/comissoes',
+      icon: <Percent className="w-5 h-5 text-emerald-400" />,
+      label: 'Comissões',
+      requiredLevel: 'supervisor',
+    },
+    {
+      to: '/relatorios',
+      icon: <FileBarChart2 className="w-5 h-5 text-cyan-400" />,
+      label: 'Relatórios',
+      requiredLevel: 'financeiro',
     },
     {
       to: '/settings',

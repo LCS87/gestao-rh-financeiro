@@ -43,6 +43,19 @@ public class RegraComissao {
     @Column(precision = 15, scale = 2)
     private BigDecimal valorMaximo;
 
+    /**
+     * Acelerador: percentual EXTRA sobre a comissão quando a meta é batida
+     * (ex.: 20 => +20% de comissão em campanhas de vendas). Nulo/zera sem acelerador.
+     */
+    @Column(name = "acelerador_percentual", precision = 5, scale = 2)
+    private BigDecimal aceleradorPercentual;
+
+    /**
+     * Meta mínima (%) que precisa ser atingida para o acelerador/campanha valer.
+     */
+    @Column(name = "meta_minima_percentual", precision = 5, scale = 2)
+    private BigDecimal metaMinimaPercentual;
+
     @Column(name = "aplicar_por_departamento", nullable = false)
     private Boolean aplicarPorDepartamento = false;
 
@@ -72,6 +85,13 @@ public class RegraComissao {
     }
 
     public BigDecimal calcularComissao(BigDecimal valorVenda) {
+        return aplicarAcelerador(calcularComissaoBase(valorVenda), BigDecimal.ZERO);
+    }
+
+    /**
+     * Cálculo base por tipo de regra.
+     */
+    private BigDecimal calcularComissaoBase(BigDecimal valorVenda) {
         BigDecimal comissao = BigDecimal.ZERO;
 
         switch (tipoComissao) {
@@ -97,5 +117,38 @@ public class RegraComissao {
         }
 
         return comissao;
+    }
+
+    /**
+     * Simulação considerando o percentual da meta batida (campanhas/acceleradores):
+     * - BONUS_META: paga valorFixo como bônus quando a meta mínima é atingida;
+     * - aceleradorPercentual: multiplica a comissão extra quando a meta mínima é atingida.
+     */
+    public BigDecimal simularComissao(BigDecimal valorVenda, BigDecimal percentualMeta) {
+        BigDecimal pctMeta = percentualMeta != null ? percentualMeta : BigDecimal.ZERO;
+        BigDecimal comissao = calcularComissaoBase(valorVenda);
+
+        if (tipoComissao == TipoComissao.BONUS_META && atingeMetaMinima(pctMeta) && valorFixo != null) {
+            comissao = comissao.add(valorFixo);
+        }
+
+        return aplicarAcelerador(comissao, pctMeta);
+    }
+
+    private boolean atingeMetaMinima(BigDecimal percentualMeta) {
+        BigDecimal minimo = metaMinimaPercentual != null ? metaMinimaPercentual : BigDecimal.valueOf(100);
+        return percentualMeta.compareTo(minimo) >= 0;
+    }
+
+    private BigDecimal aplicarAcelerador(BigDecimal comissao, BigDecimal percentualMeta) {
+        if (aceleradorPercentual == null || aceleradorPercentual.compareTo(BigDecimal.ZERO) <= 0) {
+            return comissao;
+        }
+        if (!atingeMetaMinima(percentualMeta)) {
+            return comissao;
+        }
+        BigDecimal extra = comissao.multiply(aceleradorPercentual)
+                .divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+        return comissao.add(extra);
     }
 }

@@ -22,6 +22,8 @@ public class QRegraComissao extends EntityPathBase<RegraComissao> {
 
     public static final QRegraComissao regraComissao = new QRegraComissao("regraComissao");
 
+    public final NumberPath<java.math.BigDecimal> aceleradorPercentual = createNumber("aceleradorPercentual", java.math.BigDecimal.class);
+
     public final BooleanPath aplicarPorDepartamento = createBoolean("aplicarPorDepartamento");
 
     public final BooleanPath ativo = createBoolean("ativo");
@@ -35,6 +37,8 @@ public class QRegraComissao extends EntityPathBase<RegraComissao> {
     public final StringPath descricao = createString("descricao");
 
     public final ComparablePath<java.util.UUID> id = createComparable("id", java.util.UUID.class);
+
+    public final NumberPath<java.math.BigDecimal> metaMinimaPercentual = createNumber("metaMinimaPercentual", java.math.BigDecimal.class);
 
     public final StringPath nome = createString("nome");
 

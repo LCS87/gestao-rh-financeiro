@@ -86,6 +86,7 @@
 /workspace/target/generated-sources/java/br/com/callcenter/modulorh/domain/entity/QFeedbackAvaliacao.java
 /workspace/src/main/java/br/com/callcenter/modulofinanceiro/application/ContaPagarService.java
 /workspace/src/main/java/br/com/callcenter/modulorh/api/dto/ResumoVendasDto.java
+/workspace/src/main/java/br/com/callcenter/modulorelatorios/application/RelatorioPdfService.java
 /workspace/src/main/java/br/com/callcenter/modulorh/infrastructure/repository/EquipeRepository.java
 /workspace/src/main/java/br/com/callcenter/modulofinanceiro/application/FolhaPagamentoService.java
 /workspace/src/main/java/br/com/callcenter/modulorh/domain/entity/EnqueteMural.java

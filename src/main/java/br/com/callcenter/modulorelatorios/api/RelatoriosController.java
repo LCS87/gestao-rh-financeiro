@@ -2,17 +2,21 @@ package br.com.callcenter.modulorelatorios.api;
 
 import br.com.callcenter.modulo_comissoes.api.dto.ApuracaoComissaoResponse;
 import br.com.callcenter.modulo_comissoes.application.ComissaoService;
+import br.com.callcenter.modulorelatorios.application.RelatorioPdfService;
 import br.com.callcenter.modulorelatorios.application.RelatoriosService;
 import br.com.callcenter.modulorelatorios.domain.entity.DRE;
 import br.com.callcenter.modulorelatorios.domain.entity.FluxoCaixa;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,11 +24,13 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/relatorios")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Relatórios Gerenciais", description = "DRE, Fluxo de Caixa e Relatórios Gerenciais")
 public class RelatoriosController {
 
     private final RelatoriosService relatoriosService;
     private final ComissaoService comissaoService;
+    private final RelatorioPdfService relatorioPdfService;
 
     @GetMapping("/dre")
     @Operation(summary = "Lista DRE por período")
@@ -189,6 +195,140 @@ public class RelatoriosController {
     @Operation(summary = "Saldo atual consolidado (folha paga + entradas - saídas)")
     public ResponseEntity<Double> saldoAtual() {
         return ResponseEntity.ok(relatoriosService.getSaldoAtual());
+    }
+
+    // --- Exportação PDF dos relatórios gerenciais (Fase 4) ---
+
+    @GetMapping(value = "/comissoes/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Exporta apuração de comissões do mês em PDF")
+    public ResponseEntity<byte[]> exportarComissoesPdf(@RequestParam String mesReferencia) {
+        try {
+            ApuracaoComissaoResponse apuracao = comissaoService.apurarComissoesMes(mesReferencia);
+            List<String[]> linhas = new ArrayList<>();
+            linhas.add(new String[]{"Funcionário", "Comissão", "SECAO"});
+            linhas.add(new String[]{"Total de funcionários na apuração:",
+                    nullSafe(apuracao.getFuncionarios().size())});
+            for (ApuracaoComissaoResponse.ApuracaoPorFuncionario f : apuracao.getFuncionarios()) {
+                linhas.add(new String[]{
+                        f.getNomeFuncionario() + " (" + f.getQuantidadeVendas() + " vendas / R$ "
+                                + fmt(f.getTotalVendas()) + ")",
+                        "R$ " + fmt(f.getTotalComissoes())});
+            }
+            byte[] pdf = relatorioPdfService.gerarRelatorio(
+                    "RELAÇÃO DE COMISSÕES POR OPERADOR",
+                    "Competência: " + mesReferencia + " | Emitido em: " + LocalDate.now(),
+                    linhas);
+            return pdfResponse(pdf, "comissoes-" + mesReferencia + ".pdf");
+        } catch (Exception e) {
+            log.error("Falha ao gerar PDF de comissões", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping(value = "/provisoes-folha/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Exporta extrato de provisões da folha em PDF")
+    public ResponseEntity<byte[]> exportarProvisoesPdf(@RequestParam String periodo) {
+        try {
+            Map<String, Object> prov = relatoriosService.extratoProvisoesFolha(periodo);
+            List<String[]> linhas = new ArrayList<>();
+            linhas.add(new String[]{"Item", "Valor", "SECAO"});
+            linhas.add(new String[]{"Período:", nullSafe(prov.get("periodo"))});
+            linhas.add(new String[]{"Quantidade de folhas:", nullSafe(prov.get("quantidadeFolhas"))});
+            linhas.add(new String[]{"Provisão FGTS:", "R$ " + fmt(prov.get("provisaoFGTS"))});
+            linhas.add(new String[]{"Provisão INSS:", "R$ " + fmt(prov.get("provisaoINSS"))});
+            linhas.add(new String[]{"Provisão 13º Salário:", "R$ " + fmt(prov.get("provisaoDecimoTerceiro"))});
+            linhas.add(new String[]{"Provisão Férias:", "R$ " + fmt(prov.get("provisaoFerias"))});
+            linhas.add(new String[]{"Comissões a pagar:", "R$ " + fmt(prov.get("comissoesAPagar"))});
+            linhas.add(new String[]{"Encargos estimados:", "R$ " + fmt(prov.get("encargosEstimados"))});
+            linhas.add(new String[]{"TOTAL PROVISIONADO:", "R$ " + fmt(prov.get("totalProvisionado"))});
+            byte[] pdf = relatorioPdfService.gerarRelatorio(
+                    "EXTRATO DE PROVISÕES DA FOLHA",
+                    "Período: " + periodo + " | Emitido em: " + LocalDate.now(),
+                    linhas);
+            return pdfResponse(pdf, "provisoes-" + periodo + ".pdf");
+        } catch (Exception e) {
+            log.error("Falha ao gerar PDF de provisões", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping(value = "/turnover-absenteismo/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Exporta turnover/absenteísmo por departamento em PDF")
+    public ResponseEntity<byte[]> exportarTurnoverPdf(@RequestParam String periodo) {
+        try {
+            List<Map<String, Object>> linhasDados = relatoriosService.turnoverAbsenteismoPorDepartamento(periodo);
+            List<String[]> linhas = new ArrayList<>();
+            linhas.add(new String[]{"Departamento", "Efetivo / Desligados / Turnover% / Absenteismo%", "SECAO"});
+            for (Map<String, Object> l : linhasDados) {
+                linhas.add(new String[]{
+                        nullSafe(l.get("departamentoId")),
+                        nullSafe(l.get("totalFuncionarios")) + " / " +
+                                nullSafe(l.get("desligadosNoPeriodo")) + " / " +
+                                nullSafe(l.get("turnoverPercent")) + "% / " +
+                                nullSafe(l.get("absenteismoPercent")) + "%"});
+            }
+            byte[] pdf = relatorioPdfService.gerarRelatorio(
+                    "TURNOVER E ABSENTEÍSMO POR DEPARTAMENTO",
+                    "Período: " + periodo + " | Emitido em: " + LocalDate.now(),
+                    linhas);
+            return pdfResponse(pdf, "turnover-absenteismo-" + periodo + ".pdf");
+        } catch (Exception e) {
+            log.error("Falha ao gerar PDF de turnover", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping(value = "/dre/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Exporta DRE do período em PDF")
+    public ResponseEntity<byte[]> exportarDREPdf(
+            @RequestParam String periodoInicio,
+            @RequestParam String periodoFim) {
+        try {
+            List<DRE> dres = relatoriosService.listarDRE(periodoInicio, periodoFim);
+            List<String[]> linhas = new ArrayList<>();
+            for (DRE d : dres) {
+                linhas.add(new String[]{"PERÍODO " + nullSafe(d.getPeriodo()), "", "SECAO"});
+                linhas.add(new String[]{"Receita de Vendas:", "R$ " + fmt(d.getReceitaVendas())});
+                linhas.add(new String[]{"Outras Receitas:", "R$ " + fmt(d.getOutrasReceitas())});
+                linhas.add(new String[]{"Receita Total:", "R$ " + fmt(d.getReceitaTotal())});
+                linhas.add(new String[]{"Custo de Vendas:", "R$ " + fmt(d.getCustoVendas())});
+                linhas.add(new String[]{"Lucro Bruto:", "R$ " + fmt(d.getLucroBruto())});
+                linhas.add(new String[]{"Despesas Administrativas:", "R$ " + fmt(d.getDespesasAdministrativas())});
+                linhas.add(new String[]{"Despesas Comerciais:", "R$ " + fmt(d.getDespesasComerciais())});
+                linhas.add(new String[]{"Despesas Financeiras:", "R$ " + fmt(d.getDespesasFinanceiras())});
+                linhas.add(new String[]{"Outras Despesas:", "R$ " + fmt(d.getOutrasDespesas())});
+                linhas.add(new String[]{"Despesas Totais:", "R$ " + fmt(d.getDespesasTotal())});
+                linhas.add(new String[]{"Lucro Operacional:", "R$ " + fmt(d.getLucroOperacional())});
+                linhas.add(new String[]{"Resultado Financeiro:", "R$ " + fmt(d.getResultadoFinanceiro())});
+                linhas.add(new String[]{"Lucro Antes de Impostos:", "R$ " + fmt(d.getLucroAntesImposto())});
+                linhas.add(new String[]{"Impostos:", "R$ " + fmt(d.getImpostos())});
+                linhas.add(new String[]{"LUCRO LÍQUIDO:", "R$ " + fmt(d.getLucroLiquido())});
+            }
+            if (linhas.isEmpty()) {
+                linhas.add(new String[]{"Sem dados de DRE para o período informado.", ""});
+            }
+            byte[] pdf = relatorioPdfService.gerarRelatorio(
+                    "DEMONSTRATIVO DE RESULTADO (DRE)",
+                    "Período: " + periodoInicio + " a " + periodoFim + " | Emitido em: " + LocalDate.now(),
+                    linhas);
+            return pdfResponse(pdf, "dre-" + periodoInicio + "-" + periodoFim + ".pdf");
+        } catch (Exception e) {
+            log.error("Falha ao gerar PDF de DRE", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private ResponseEntity<byte[]> pdfResponse(byte[] pdf, String filename) {
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
+    }
+
+    private static String fmt(Object v) {
+        if (v == null) return "0,00";
+        double d = (v instanceof Number n) ? n.doubleValue() : Double.parseDouble(String.valueOf(v));
+        return String.format(java.util.Locale.US, "%.2f", d).replace('.', ',');
     }
 
     private static String nullSafe(Object v) {

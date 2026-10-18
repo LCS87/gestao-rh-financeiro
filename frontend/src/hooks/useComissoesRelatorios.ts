@@ -116,6 +116,25 @@ export function useApuracaoComissoes(mesReferencia: string) {
   });
 }
 
+/**
+ * Aplica a apuração de comissões do mês no campo "comissoes" das folhas de
+ * pagamento já geradas (POST /financeiro/folha-pagamento/aplicar-comissoes/{mes}).
+ */
+export function useAplicarComissoesNaFolha() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (mesReferencia: string) => {
+      const { data } = await api.post<string>(
+        `/financeiro/folha-pagamento/aplicar-comissoes/${mesReferencia}`,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apuracao-comissoes'] });
+    },
+  });
+}
+
 // ===== Fase 4 — Central de Relatórios =====
 
 export interface ProvisoesFolha {

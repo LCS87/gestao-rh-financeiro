@@ -31,7 +31,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/actuator/**", "/swagger-ui/**", "/api-docs/**", "/actuator/health").permitAll()
+                // Autenticação e health check público (para liveness/readiness probes)
+                .requestMatchers("/auth/login", "/auth/refresh", "/actuator/health", "/actuator/health/**").permitAll()
+                // Swagger/Actuator administrativos exigem papel TI ou ADMIN
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/actuator/**").hasAnyRole("TI", "ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

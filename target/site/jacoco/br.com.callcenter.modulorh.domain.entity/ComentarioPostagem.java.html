@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ComentarioPostagem.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">ComentarioPostagem.java</span></div><h1>ComentarioPostagem.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;comentarios_postagem&quot;)
+<span class="nc bnc" id="L13" title="All 70 branches missed.">@Data</span>
+<span class="nc" id="L14">@NoArgsConstructor</span>
+<span class="nc" id="L15">@AllArgsConstructor</span>
+public class ComentarioPostagem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L20">    private UUID id;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;postagem_id&quot;, nullable = false)
+<span class="nc" id="L24">    private PostagemMural postagem;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;autor_id&quot;, nullable = false)
+<span class="nc" id="L28">    private Funcionario autor;</span>
+
+    @Column(nullable = false, length = 1000)
+<span class="nc" id="L31">    private String conteudo;</span>
+
+<span class="nc" id="L33">    @Column(name = &quot;data_comentario&quot;, nullable = false)</span>
+<span class="nc" id="L34">    private LocalDateTime dataComentario = LocalDateTime.now();</span>
+
+    @Column(name = &quot;data_edicao&quot;)
+<span class="nc" id="L37">    private LocalDateTime dataEdicao;</span>
+
+<span class="nc" id="L39">    @Column(nullable = false)</span>
+<span class="nc" id="L40">    private Boolean ativo = true;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;comentario_pai_id&quot;)
+<span class="nc" id="L44">    private ComentarioPostagem comentarioPai; // Para respostas a comentários</span>
+
+    @PreUpdate
+    public void preUpdate() {
+<span class="nc" id="L48">        this.dataEdicao = LocalDateTime.now();</span>
+<span class="nc" id="L49">    }</span>
+
+    // Construtor auxiliar
+<span class="nc" id="L52">    public ComentarioPostagem(PostagemMural postagem, Funcionario autor, String conteudo) {</span>
+<span class="nc" id="L53">        this.postagem = postagem;</span>
+<span class="nc" id="L54">        this.autor = autor;</span>
+<span class="nc" id="L55">        this.conteudo = conteudo;</span>
+<span class="nc" id="L56">        this.ativo = true;</span>
+<span class="nc" id="L57">        this.dataComentario = LocalDateTime.now();</span>
+<span class="nc" id="L58">    }</span>
+
+    public ComentarioPostagem(PostagemMural postagem, Funcionario autor, String conteudo, 
+                             ComentarioPostagem comentarioPai) {
+<span class="nc" id="L62">        this(postagem, autor, conteudo);</span>
+<span class="nc" id="L63">        this.comentarioPai = comentarioPai;</span>
+<span class="nc" id="L64">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

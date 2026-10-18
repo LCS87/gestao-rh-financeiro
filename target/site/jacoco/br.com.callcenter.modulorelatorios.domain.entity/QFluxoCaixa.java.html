@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QFluxoCaixa.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorelatorios.domain.entity</a> &gt; <span class="el_source">QFluxoCaixa.java</span></div><h1>QFluxoCaixa.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorelatorios.domain.entity;
+
+import static com.querydsl.core.types.PathMetadataFactory.*;
+
+import com.querydsl.core.types.dsl.*;
+
+import com.querydsl.core.types.PathMetadata;
+import javax.annotation.processing.Generated;
+import com.querydsl.core.types.Path;
+
+
+/**
+ * QFluxoCaixa is a Querydsl query type for FluxoCaixa
+ */
+@Generated(&quot;com.querydsl.codegen.DefaultEntitySerializer&quot;)
+public class QFluxoCaixa extends EntityPathBase&lt;FluxoCaixa&gt; {
+
+    private static final long serialVersionUID = 1165138937L;
+
+<span class="nc" id="L20">    public static final QFluxoCaixa fluxoCaixa = new QFluxoCaixa(&quot;fluxoCaixa&quot;);</span>
+
+<span class="nc" id="L22">    public final StringPath categoria = createString(&quot;categoria&quot;);</span>
+
+<span class="nc" id="L24">    public final StringPath contaBancaria = createString(&quot;contaBancaria&quot;);</span>
+
+<span class="nc" id="L26">    public final DatePath&lt;java.time.LocalDate&gt; createdAt = createDate(&quot;createdAt&quot;, java.time.LocalDate.class);</span>
+
+<span class="nc" id="L28">    public final DatePath&lt;java.time.LocalDate&gt; data = createDate(&quot;data&quot;, java.time.LocalDate.class);</span>
+
+<span class="nc" id="L30">    public final StringPath descricao = createString(&quot;descricao&quot;);</span>
+
+<span class="nc" id="L32">    public final ComparablePath&lt;java.util.UUID&gt; id = createComparable(&quot;id&quot;, java.util.UUID.class);</span>
+
+<span class="nc" id="L34">    public final StringPath periodo = createString(&quot;periodo&quot;);</span>
+
+<span class="nc" id="L36">    public final NumberPath&lt;Double&gt; saldoAcumulado = createNumber(&quot;saldoAcumulado&quot;, Double.class);</span>
+
+<span class="nc" id="L38">    public final StringPath tipo = createString(&quot;tipo&quot;);</span>
+
+<span class="nc" id="L40">    public final NumberPath&lt;Double&gt; valor = createNumber(&quot;valor&quot;, Double.class);</span>
+
+    public QFluxoCaixa(String variable) {
+<span class="nc" id="L43">        super(FluxoCaixa.class, forVariable(variable));</span>
+<span class="nc" id="L44">    }</span>
+
+    public QFluxoCaixa(Path&lt;? extends FluxoCaixa&gt; path) {
+<span class="nc" id="L47">        super(path.getType(), path.getMetadata());</span>
+<span class="nc" id="L48">    }</span>
+
+    public QFluxoCaixa(PathMetadata metadata) {
+<span class="nc" id="L51">        super(FluxoCaixa.class, metadata);</span>
+<span class="nc" id="L52">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

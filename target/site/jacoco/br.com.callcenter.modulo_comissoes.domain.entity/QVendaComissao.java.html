@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QVendaComissao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulo_comissoes.domain.entity</a> &gt; <span class="el_source">QVendaComissao.java</span></div><h1>QVendaComissao.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulo_comissoes.domain.entity;
+
+import static com.querydsl.core.types.PathMetadataFactory.*;
+
+import com.querydsl.core.types.dsl.*;
+
+import com.querydsl.core.types.PathMetadata;
+import javax.annotation.processing.Generated;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.PathInits;
+
+
+/**
+ * QVendaComissao is a Querydsl query type for VendaComissao
+ */
+@Generated(&quot;com.querydsl.codegen.DefaultEntitySerializer&quot;)
+public class QVendaComissao extends EntityPathBase&lt;VendaComissao&gt; {
+
+    private static final long serialVersionUID = 835458399L;
+
+<span class="nc" id="L21">    private static final PathInits INITS = PathInits.DIRECT2;</span>
+
+<span class="nc" id="L23">    public static final QVendaComissao vendaComissao = new QVendaComissao(&quot;vendaComissao&quot;);</span>
+
+<span class="nc" id="L25">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataAtualizacao = createDateTime(&quot;dataAtualizacao&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L27">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataCriacao = createDateTime(&quot;dataCriacao&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L29">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataPagamento = createDateTime(&quot;dataPagamento&quot;, java.time.LocalDateTime.class);</span>
+
+    public final br.com.callcenter.modulorh.domain.entity.QFuncionario funcionario;
+
+<span class="nc" id="L33">    public final ComparablePath&lt;java.util.UUID&gt; id = createComparable(&quot;id&quot;, java.util.UUID.class);</span>
+
+<span class="nc" id="L35">    public final StringPath observacoes = createString(&quot;observacoes&quot;);</span>
+
+    public final QRegraComissao regraComissao;
+
+<span class="nc" id="L39">    public final EnumPath&lt;StatusPagamento&gt; statusPagamento = createEnum(&quot;statusPagamento&quot;, StatusPagamento.class);</span>
+
+<span class="nc" id="L41">    public final NumberPath&lt;java.math.BigDecimal&gt; valorComissao = createNumber(&quot;valorComissao&quot;, java.math.BigDecimal.class);</span>
+
+<span class="nc" id="L43">    public final NumberPath&lt;java.math.BigDecimal&gt; valorVenda = createNumber(&quot;valorVenda&quot;, java.math.BigDecimal.class);</span>
+
+    public final br.com.callcenter.modulorh.domain.entity.QVenda venda;
+
+    public QVendaComissao(String variable) {
+<span class="nc" id="L48">        this(VendaComissao.class, forVariable(variable), INITS);</span>
+<span class="nc" id="L49">    }</span>
+
+    public QVendaComissao(Path&lt;? extends VendaComissao&gt; path) {
+<span class="nc" id="L52">        this(path.getType(), path.getMetadata(), PathInits.getFor(path.getMetadata(), INITS));</span>
+<span class="nc" id="L53">    }</span>
+
+    public QVendaComissao(PathMetadata metadata) {
+<span class="nc" id="L56">        this(metadata, PathInits.getFor(metadata, INITS));</span>
+<span class="nc" id="L57">    }</span>
+
+    public QVendaComissao(PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L60">        this(VendaComissao.class, metadata, inits);</span>
+<span class="nc" id="L61">    }</span>
+
+    public QVendaComissao(Class&lt;? extends VendaComissao&gt; type, PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L64">        super(type, metadata, inits);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        this.funcionario = inits.isInitialized(&quot;funcionario&quot;) ? new br.com.callcenter.modulorh.domain.entity.QFuncionario(forProperty(&quot;funcionario&quot;)) : null;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        this.regraComissao = inits.isInitialized(&quot;regraComissao&quot;) ? new QRegraComissao(forProperty(&quot;regraComissao&quot;), inits.get(&quot;regraComissao&quot;)) : null;</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        this.venda = inits.isInitialized(&quot;venda&quot;) ? new br.com.callcenter.modulorh.domain.entity.QVenda(forProperty(&quot;venda&quot;), inits.get(&quot;venda&quot;)) : null;</span>
+<span class="nc" id="L68">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

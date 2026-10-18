@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContaPagar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulofinanceiro.domain.entity</a> &gt; <span class="el_source">ContaPagar.java</span></div><h1>ContaPagar.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulofinanceiro.domain.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;contas_pagar&quot;)
+<span class="nc bnc" id="L15" title="All 110 branches missed.">@Data</span>
+<span class="nc" id="L16">@Builder</span>
+<span class="nc" id="L17">@NoArgsConstructor</span>
+<span class="nc" id="L18">@AllArgsConstructor</span>
+public class ContaPagar {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L23">    private UUID id;</span>
+
+    @Column(nullable = false)
+<span class="nc" id="L26">    private String descricao;</span>
+
+    @Column(nullable = false)
+<span class="nc" id="L29">    private String fornecedor;</span>
+
+    @Column(name = &quot;valor_total&quot;, nullable = false, precision = 19, scale = 2)
+<span class="nc" id="L32">    private BigDecimal valorTotal;</span>
+
+    @Column(name = &quot;valor_pago&quot;, precision = 19, scale = 2)
+<span class="nc" id="L35">    private BigDecimal valorPago;</span>
+
+    @Column(name = &quot;data_vencimento&quot;, nullable = false)
+<span class="nc" id="L38">    private LocalDate dataVencimento;</span>
+
+    @Column(name = &quot;data_pagamento&quot;)
+<span class="nc" id="L41">    private LocalDate dataPagamento;</span>
+
+<span class="nc" id="L43">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false)
+<span class="nc" id="L45">    private StatusConta status = StatusConta.PENDENTE;</span>
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+<span class="nc" id="L49">    private CategoriaConta categoria;</span>
+
+    @Column(length = 500)
+<span class="nc" id="L52">    private String observacoes;</span>
+
+    @Column(name = &quot;numero_documento&quot;)
+<span class="nc" id="L55">    private String numeroDocumento;</span>
+
+    @Column(name = &quot;created_at&quot;)
+<span class="nc" id="L58">    private LocalDate createdAt;</span>
+
+    @Column(name = &quot;updated_at&quot;)
+<span class="nc" id="L61">    private LocalDate updatedAt;</span>
+
+    @PrePersist
+    protected void onCreate() {
+<span class="nc" id="L65">        createdAt = LocalDate.now();</span>
+<span class="nc" id="L66">        updatedAt = LocalDate.now();</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (valorPago == null) {</span>
+<span class="nc" id="L68">            valorPago = BigDecimal.ZERO;</span>
+        }
+<span class="nc" id="L70">    }</span>
+
+    @PreUpdate
+    protected void onUpdate() {
+<span class="nc" id="L74">        updatedAt = LocalDate.now();</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (valorPago == null) {</span>
+<span class="nc" id="L76">            valorPago = BigDecimal.ZERO;</span>
+        }
+        // Atualiza status automaticamente
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (valorPago.compareTo(valorTotal) &gt;= 0) {</span>
+<span class="nc" id="L80">            status = StatusConta.PAGO;</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        } else if (valorPago.compareTo(BigDecimal.ZERO) &gt; 0) {</span>
+<span class="nc" id="L82">            status = StatusConta.PARCIAL;</span>
+        }
+<span class="nc" id="L84">    }</span>
+
+    public BigDecimal getValorRestante() {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        return valorTotal.subtract(valorPago != null ? valorPago : BigDecimal.ZERO);</span>
+    }
+
+    public boolean isVencida() {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        return status != StatusConta.PAGO &amp;&amp; </span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">               LocalDate.now().isAfter(dataVencimento);</span>
+    }
+
+<span class="nc" id="L95">    public enum StatusConta {</span>
+<span class="nc" id="L96">        PENDENTE, PARCIAL, PAGO, CANCELADO</span>
+    }
+
+<span class="nc" id="L99">    public enum CategoriaConta {</span>
+<span class="nc" id="L100">        ALUGUEL, ENERGIA, AGUA, TELEFONE, INTERNET, MATERIAL_ESCRITORIO,</span>
+<span class="nc" id="L101">        EQUIPAMENTOS, SERVICOS_TERCEIROS, IMPOSTOS, FOLHA_PAGAMENTO,</span>
+<span class="nc" id="L102">        BENEFICIOS, OUTROS</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

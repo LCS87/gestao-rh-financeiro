@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ParametroSistemaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.core.api</a> &gt; <span class="el_source">ParametroSistemaController.java</span></div><h1>ParametroSistemaController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.core.api;
+
+import br.com.callcenter.core.application.ParametroSistemaService;
+import br.com.callcenter.core.dto.ParametroSistemaDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(&quot;/api/parametros&quot;)
+<span class="nc" id="L16">@RequiredArgsConstructor</span>
+@Tag(name = &quot;Parâmetros do Sistema&quot;, description = &quot;Endpoints para gerenciamento de Configurações Globais&quot;)
+public class ParametroSistemaController {
+
+    private final ParametroSistemaService parametroService;
+
+    @GetMapping
+    @Operation(summary = &quot;Lista todos os parâmetros (Admin/TI)&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN', 'TI')&quot;)
+    public ResponseEntity&lt;List&lt;ParametroSistemaDto&gt;&gt; listarTodos() {
+<span class="nc" id="L26">        return ResponseEntity.ok(parametroService.listarTodos());</span>
+    }
+
+    @GetMapping(&quot;/{chave}&quot;)
+    @Operation(summary = &quot;Busca parâmetro por chave&quot;)
+    public ResponseEntity&lt;String&gt; getParametro(@PathVariable String chave,
+                                              @RequestParam(defaultValue = &quot;&quot;) String padrao) {
+<span class="nc" id="L33">        return ResponseEntity.ok(parametroService.getValorParametro(chave, padrao));</span>
+    }
+
+    @PostMapping
+    @Operation(summary = &quot;Adiciona ou Atualiza um parâmetro (Admin/TI)&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN', 'TI')&quot;)
+    public ResponseEntity&lt;ParametroSistemaDto&gt; salvarParametro(@RequestBody ParametroSistemaDto dto) {
+<span class="nc" id="L40">        return ResponseEntity.ok(parametroService.salvarParametro(dto));</span>
+    }
+    
+    @PostMapping(&quot;/limpar-cache&quot;)
+    @Operation(summary = &quot;Limpa o cache do sistema inteiro de parâmetros&quot;)
+    @PreAuthorize(&quot;hasRole('TI')&quot;)
+    public ResponseEntity&lt;Void&gt; limparCache() {
+<span class="nc" id="L47">        parametroService.limparCache();</span>
+<span class="nc" id="L48">        return ResponseEntity.noContent().build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

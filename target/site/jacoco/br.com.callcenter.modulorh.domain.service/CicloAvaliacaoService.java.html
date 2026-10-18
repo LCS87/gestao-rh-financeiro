@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CicloAvaliacaoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.service</a> &gt; <span class="el_source">CicloAvaliacaoService.java</span></div><h1>CicloAvaliacaoService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.callcenter.modulorh.domain.entity.CicloAvaliacao;
+import br.com.callcenter.modulorh.domain.enums.StatusCicloAvaliacao;
+import br.com.callcenter.modulorh.infrastructure.repository.CicloAvaliacaoRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+<span class="nc" id="L18">@Slf4j</span>
+@Service
+<span class="nc" id="L20">@RequiredArgsConstructor</span>
+public class CicloAvaliacaoService {
+
+    private final CicloAvaliacaoRepository cicloAvaliacaoRepository;
+    // TODO: Descomentar quando AvaliacaoDesempenhoService for criado
+    // private final AvaliacaoDesempenhoService avaliacaoDesempenhoService;
+
+    @Transactional(readOnly = true)
+    public List&lt;CicloAvaliacao&gt; listarCiclosAtivos() {
+<span class="nc" id="L29">        log.debug(&quot;Listando ciclos de avaliação ativos&quot;);</span>
+<span class="nc" id="L30">        return cicloAvaliacaoRepository.findByAtivoTrue();</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Optional&lt;CicloAvaliacao&gt; buscarPorId(UUID id) {
+<span class="nc" id="L35">        log.debug(&quot;Buscando ciclo de avaliação por ID: {}&quot;, id);</span>
+<span class="nc" id="L36">        return cicloAvaliacaoRepository.findById(id);</span>
+    }
+
+    @Transactional
+    public CicloAvaliacao criarCiclo(CicloAvaliacao ciclo) {
+<span class="nc" id="L41">        log.debug(&quot;Criando novo ciclo de avaliação: {}&quot;, ciclo.getNome());</span>
+
+        // Validar se já existe ciclo com mesmo nome, ano e tipo
+<span class="nc" id="L44">        boolean jaExiste = cicloAvaliacaoRepository.existsByNomeAndAnoReferenciaAndTipo(</span>
+<span class="nc" id="L45">                ciclo.getNome(), ciclo.getAnoReferencia(), ciclo.getTipo());</span>
+
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (jaExiste) {</span>
+<span class="nc" id="L48">            throw new IllegalArgumentException(&quot;Já existe um ciclo com esse nome para o ano e tipo especificados&quot;);</span>
+        }
+
+        // Validar datas
+<span class="nc" id="L52">        validarDatasCiclo(ciclo);</span>
+
+        // Configurar datas automáticas se não informadas
+<span class="nc" id="L55">        configurarDatasAutomaticas(ciclo);</span>
+
+<span class="nc" id="L57">        CicloAvaliacao cicloSalvo = cicloAvaliacaoRepository.save(ciclo);</span>
+<span class="nc" id="L58">        log.info(&quot;Ciclo de avaliação criado com sucesso: {}&quot;, cicloSalvo.getId());</span>
+
+<span class="nc" id="L60">        return cicloSalvo;</span>
+    }
+
+    @Transactional
+    public CicloAvaliacao atualizarCiclo(UUID id, CicloAvaliacao cicloAtualizado) {
+<span class="nc" id="L65">        log.debug(&quot;Atualizando ciclo de avaliação: {}&quot;, id);</span>
+
+<span class="nc" id="L67">        return cicloAvaliacaoRepository.findById(id).map(ciclo -&gt; {</span>
+            // Não permitir alterar ciclo concluído ou cancelado
+<span class="nc bnc" id="L69" title="All 2 branches missed.">            if (ciclo.getStatus() == StatusCicloAvaliacao.CONCLUIDO ||</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                    ciclo.getStatus() == StatusCicloAvaliacao.CANCELADO) {</span>
+<span class="nc" id="L71">                throw new IllegalArgumentException(&quot;Não é possível alterar um ciclo já concluído ou cancelado&quot;);</span>
+            }
+
+            // Atualizar campos permitidos
+<span class="nc" id="L75">            ciclo.setNome(cicloAtualizado.getNome());</span>
+<span class="nc" id="L76">            ciclo.setDescricao(cicloAtualizado.getDescricao());</span>
+
+<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (cicloAtualizado.getDataInicio() != null &amp;&amp;</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                    cicloAtualizado.getDataFim() != null) {</span>
+<span class="nc" id="L80">                validarDatasCiclo(cicloAtualizado);</span>
+<span class="nc" id="L81">                ciclo.setDataInicio(cicloAtualizado.getDataInicio());</span>
+<span class="nc" id="L82">                ciclo.setDataFim(cicloAtualizado.getDataFim());</span>
+            }
+
+<span class="nc" id="L85">            ciclo.setDataInicioAutoavaliacao(cicloAtualizado.getDataInicioAutoavaliacao());</span>
+<span class="nc" id="L86">            ciclo.setDataFimAutoavaliacao(cicloAtualizado.getDataFimAutoavaliacao());</span>
+<span class="nc" id="L87">            ciclo.setDataInicioAvaliacaoGestor(cicloAtualizado.getDataInicioAvaliacaoGestor());</span>
+<span class="nc" id="L88">            ciclo.setDataFimAvaliacaoGestor(cicloAtualizado.getDataFimAvaliacaoGestor());</span>
+<span class="nc" id="L89">            ciclo.setDataInicioFeedback(cicloAtualizado.getDataInicioFeedback());</span>
+<span class="nc" id="L90">            ciclo.setDataFimFeedback(cicloAtualizado.getDataFimFeedback());</span>
+
+            // Atualizar formulários
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            if (cicloAtualizado.getFormularioAutoavaliacao() != null) {</span>
+<span class="nc" id="L94">                ciclo.setFormularioAutoavaliacao(cicloAtualizado.getFormularioAutoavaliacao());</span>
+            }
+
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (cicloAtualizado.getFormularioAvaliacaoGestor() != null) {</span>
+<span class="nc" id="L98">                ciclo.setFormularioAvaliacaoGestor(cicloAtualizado.getFormularioAvaliacaoGestor());</span>
+            }
+
+            // Atualizar status se necessário
+<span class="nc" id="L102">            atualizarStatusCiclo(ciclo);</span>
+
+<span class="nc" id="L104">            CicloAvaliacao cicloAtualizadoSalvo = cicloAvaliacaoRepository.save(ciclo);</span>
+<span class="nc" id="L105">            log.info(&quot;Ciclo de avaliação atualizado: {}&quot;, id);</span>
+
+<span class="nc" id="L107">            return cicloAtualizadoSalvo;</span>
+<span class="nc" id="L108">        }).orElseThrow(() -&gt; {</span>
+<span class="nc" id="L109">            log.warn(&quot;Ciclo de avaliação não encontrado: {}&quot;, id);</span>
+<span class="nc" id="L110">            return new IllegalArgumentException(&quot;Ciclo de avaliação não encontrado&quot;);</span>
+        });
+    }
+
+    @Transactional
+    public void desativarCiclo(UUID id) {
+<span class="nc" id="L116">        log.debug(&quot;Desativando ciclo de avaliação: {}&quot;, id);</span>
+
+<span class="nc" id="L118">        cicloAvaliacaoRepository.findById(id).ifPresent(ciclo -&gt; {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (ciclo.isEmAndamento()) {</span>
+<span class="nc" id="L120">                throw new IllegalArgumentException(&quot;Não é possível desativar um ciclo em andamento&quot;);</span>
+            }
+
+<span class="nc" id="L123">            ciclo.setAtivo(false);</span>
+<span class="nc" id="L124">            cicloAvaliacaoRepository.save(ciclo);</span>
+<span class="nc" id="L125">            log.info(&quot;Ciclo de avaliação desativado: {}&quot;, id);</span>
+<span class="nc" id="L126">        });</span>
+<span class="nc" id="L127">    }</span>
+
+    @Transactional
+    public CicloAvaliacao iniciarCiclo(UUID id) {
+<span class="nc" id="L131">        log.debug(&quot;Iniciando ciclo de avaliação: {}&quot;, id);</span>
+
+<span class="nc" id="L133">        return cicloAvaliacaoRepository.findById(id).map(ciclo -&gt; {</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            if (ciclo.getStatus() != StatusCicloAvaliacao.PLANEJADO) {</span>
+<span class="nc" id="L135">                throw new IllegalArgumentException(&quot;Só é possível iniciar um ciclo no status 'Planejado'&quot;);</span>
+            }
+
+<span class="nc" id="L138">            LocalDate hoje = LocalDate.now();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            if (hoje.isBefore(ciclo.getDataInicio())) {</span>
+<span class="nc" id="L140">                throw new IllegalArgumentException(&quot;A data atual é anterior à data de início do ciclo&quot;);</span>
+            }
+
+<span class="nc" id="L143">            ciclo.setStatus(StatusCicloAvaliacao.EM_ANDAMENTO);</span>
+<span class="nc" id="L144">            CicloAvaliacao cicloAtualizado = cicloAvaliacaoRepository.save(ciclo);</span>
+
+<span class="nc" id="L146">            log.info(&quot;Ciclo de avaliação iniciado: {}&quot;, id);</span>
+<span class="nc" id="L147">            return cicloAtualizado;</span>
+<span class="nc" id="L148">        }).orElseThrow(() -&gt; {</span>
+<span class="nc" id="L149">            log.warn(&quot;Ciclo de avaliação não encontrado: {}&quot;, id);</span>
+<span class="nc" id="L150">            return new IllegalArgumentException(&quot;Ciclo de avaliação não encontrado&quot;);</span>
+        });
+    }
+
+    @Transactional
+    public CicloAvaliacao concluirCiclo(UUID id) {
+<span class="nc" id="L156">        log.debug(&quot;Concluindo ciclo de avaliação: {}&quot;, id);</span>
+
+<span class="nc" id="L158">        return cicloAvaliacaoRepository.findById(id).map(ciclo -&gt; {</span>
+            // TODO: Verificar se há avaliações pendentes (descomentar quando
+            // AvaliacaoDesempenhoService for criado)
+            // boolean temAvaliacoesPendentes =
+            // avaliacaoDesempenhoService.existemAvaliacoesPendentesNoCiclo(id);
+            //
+            // if (temAvaliacoesPendentes) {
+            // throw new IllegalArgumentException(&quot;Não é possível concluir o ciclo pois
+            // existem avaliações pendentes&quot;);
+            // }
+
+<span class="nc" id="L169">            ciclo.setStatus(StatusCicloAvaliacao.CONCLUIDO);</span>
+<span class="nc" id="L170">            ciclo.setDataAtualizacao(LocalDateTime.now());</span>
+<span class="nc" id="L171">            CicloAvaliacao cicloAtualizado = cicloAvaliacaoRepository.save(ciclo);</span>
+
+<span class="nc" id="L173">            log.info(&quot;Ciclo de avaliação concluído: {}&quot;, id);</span>
+<span class="nc" id="L174">            return cicloAtualizado;</span>
+<span class="nc" id="L175">        }).orElseThrow(() -&gt; {</span>
+<span class="nc" id="L176">            log.warn(&quot;Ciclo de avaliação não encontrado: {}&quot;, id);</span>
+<span class="nc" id="L177">            return new IllegalArgumentException(&quot;Ciclo de avaliação não encontrado&quot;);</span>
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;CicloAvaliacao&gt; listarCiclosEmAndamento() {
+<span class="nc" id="L183">        log.debug(&quot;Listando ciclos de avaliação em andamento&quot;);</span>
+<span class="nc" id="L184">        return cicloAvaliacaoRepository.findCiclosEmAndamento(LocalDate.now());</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;CicloAvaliacao&gt; listarCiclosDoAno(Integer ano) {
+<span class="nc" id="L189">        log.debug(&quot;Listando ciclos de avaliação do ano: {}&quot;, ano);</span>
+<span class="nc" id="L190">        return cicloAvaliacaoRepository.findByAno(ano);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Optional&lt;CicloAvaliacao&gt; buscarCicloAtivoEmAndamento() {
+<span class="nc" id="L195">        log.debug(&quot;Buscando ciclo ativo em andamento&quot;);</span>
+<span class="nc" id="L196">        return cicloAvaliacaoRepository.findCicloAtivoEmAndamento(LocalDate.now());</span>
+    }
+
+    // Métodos privados auxiliares
+    private void validarDatasCiclo(CicloAvaliacao ciclo) {
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (ciclo.getDataInicio().isAfter(ciclo.getDataFim())) {</span>
+<span class="nc" id="L202">            throw new IllegalArgumentException(&quot;Data de início deve ser anterior à data de fim&quot;);</span>
+        }
+
+        // Validar datas de etapas
+<span class="nc bnc" id="L206" title="All 4 branches missed.">        if (ciclo.getDataInicioAutoavaliacao() != null &amp;&amp; ciclo.getDataFimAutoavaliacao() != null) {</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (ciclo.getDataInicioAutoavaliacao().isAfter(ciclo.getDataFimAutoavaliacao())) {</span>
+<span class="nc" id="L208">                throw new IllegalArgumentException(&quot;Data de início da autoavaliação deve ser anterior à data de fim&quot;);</span>
+            }
+
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            if (ciclo.getDataInicioAutoavaliacao().isBefore(ciclo.getDataInicio()) ||</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">                    ciclo.getDataFimAutoavaliacao().isAfter(ciclo.getDataFim())) {</span>
+<span class="nc" id="L213">                throw new IllegalArgumentException(&quot;Datas da autoavaliação devem estar dentro do período do ciclo&quot;);</span>
+            }
+        }
+
+<span class="nc bnc" id="L217" title="All 4 branches missed.">        if (ciclo.getDataInicioAvaliacaoGestor() != null &amp;&amp; ciclo.getDataFimAvaliacaoGestor() != null) {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (ciclo.getDataInicioAvaliacaoGestor().isAfter(ciclo.getDataFimAvaliacaoGestor())) {</span>
+<span class="nc" id="L219">                throw new IllegalArgumentException(</span>
+                        &quot;Data de início da avaliação do gestor deve ser anterior à data de fim&quot;);
+            }
+
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (ciclo.getDataInicioAvaliacaoGestor().isBefore(ciclo.getDataInicio()) ||</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">                    ciclo.getDataFimAvaliacaoGestor().isAfter(ciclo.getDataFim())) {</span>
+<span class="nc" id="L225">                throw new IllegalArgumentException(</span>
+                        &quot;Datas da avaliação do gestor devem estar dentro do período do ciclo&quot;);
+            }
+        }
+
+<span class="nc bnc" id="L230" title="All 4 branches missed.">        if (ciclo.getDataInicioFeedback() != null &amp;&amp; ciclo.getDataFimFeedback() != null) {</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (ciclo.getDataInicioFeedback().isAfter(ciclo.getDataFimFeedback())) {</span>
+<span class="nc" id="L232">                throw new IllegalArgumentException(&quot;Data de início do feedback deve ser anterior à data de fim&quot;);</span>
+            }
+
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            if (ciclo.getDataInicioFeedback().isBefore(ciclo.getDataInicio()) ||</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                    ciclo.getDataFimFeedback().isAfter(ciclo.getDataFim())) {</span>
+<span class="nc" id="L237">                throw new IllegalArgumentException(&quot;Datas do feedback devem estar dentro do período do ciclo&quot;);</span>
+            }
+        }
+<span class="nc" id="L240">    }</span>
+
+    private void configurarDatasAutomaticas(CicloAvaliacao ciclo) {
+<span class="nc" id="L243">        LocalDate hoje = LocalDate.now();</span>
+
+        // Se não informadas, configurar datas baseadas no tipo de ciclo
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (ciclo.getDataInicioAutoavaliacao() == null) {</span>
+<span class="nc" id="L247">            ciclo.setDataInicioAutoavaliacao(ciclo.getDataInicio());</span>
+        }
+
+<span class="nc bnc" id="L250" title="All 2 branches missed.">        if (ciclo.getDataFimAutoavaliacao() == null) {</span>
+            // Autoavaliação termina 7 dias antes do fim da avaliação do gestor
+<span class="nc" id="L252">            ciclo.setDataFimAutoavaliacao(ciclo.getDataFim().minusDays(7));</span>
+        }
+
+<span class="nc bnc" id="L255" title="All 2 branches missed.">        if (ciclo.getDataInicioAvaliacaoGestor() == null) {</span>
+            // Avaliação do gestor começa após a autoavaliação
+<span class="nc" id="L257">            ciclo.setDataInicioAvaliacaoGestor(ciclo.getDataFimAutoavaliacao().plusDays(1));</span>
+        }
+
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (ciclo.getDataFimAvaliacaoGestor() == null) {</span>
+<span class="nc" id="L261">            ciclo.setDataFimAvaliacaoGestor(ciclo.getDataFim());</span>
+        }
+
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (ciclo.getDataInicioFeedback() == null) {</span>
+            // Feedback começa após o fim da avaliação do gestor
+<span class="nc" id="L266">            ciclo.setDataInicioFeedback(ciclo.getDataFimAvaliacaoGestor().plusDays(1));</span>
+        }
+
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (ciclo.getDataFimFeedback() == null) {</span>
+            // Feedback dura 15 dias
+<span class="nc" id="L271">            ciclo.setDataFimFeedback(ciclo.getDataInicioFeedback().plusDays(15));</span>
+        }
+<span class="nc" id="L273">    }</span>
+
+    private void atualizarStatusCiclo(CicloAvaliacao ciclo) {
+<span class="nc" id="L276">        LocalDate hoje = LocalDate.now();</span>
+
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (ciclo.getStatus() == StatusCicloAvaliacao.CONCLUIDO ||</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                ciclo.getStatus() == StatusCicloAvaliacao.CANCELADO) {</span>
+<span class="nc" id="L280">            return; // Não alterar status de ciclos finalizados</span>
+        }
+
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        if (hoje.isBefore(ciclo.getDataInicio())) {</span>
+<span class="nc" id="L284">            ciclo.setStatus(StatusCicloAvaliacao.PLANEJADO);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        } else if (hoje.isAfter(ciclo.getDataFim())) {</span>
+<span class="nc" id="L286">            ciclo.setStatus(StatusCicloAvaliacao.CONCLUIDO);</span>
+        } else {
+            // Verificar etapa atual
+<span class="nc bnc" id="L289" title="All 2 branches missed.">            if (ciclo.isAutoavaliacaoAtiva()) {</span>
+<span class="nc" id="L290">                ciclo.setStatus(StatusCicloAvaliacao.EM_AUTOAVALIACAO);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">            } else if (ciclo.isAvaliacaoGestorAtiva()) {</span>
+<span class="nc" id="L292">                ciclo.setStatus(StatusCicloAvaliacao.EM_AVALIACAO_GESTOR);</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            } else if (ciclo.isFeedbackAtivo()) {</span>
+<span class="nc" id="L294">                ciclo.setStatus(StatusCicloAvaliacao.EM_FEEDBACK);</span>
+            } else {
+<span class="nc" id="L296">                ciclo.setStatus(StatusCicloAvaliacao.EM_ANDAMENTO);</span>
+            }
+        }
+<span class="nc" id="L299">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EscalaController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.api</a> &gt; <span class="el_source">EscalaController.java</span></div><h1>EscalaController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.api;
+
+import br.com.callcenter.modulorh.api.dto.EscalaDto;
+import br.com.callcenter.modulorh.application.EscalaService;
+import br.com.callcenter.modulorh.domain.entity.Escala;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping(&quot;/rh/escalas&quot;)
+public class EscalaController {
+
+    private final EscalaService escalaService;
+
+<span class="nc" id="L21">    public EscalaController(EscalaService escalaService) {</span>
+<span class="nc" id="L22">        this.escalaService = escalaService;</span>
+<span class="nc" id="L23">    }</span>
+
+    @GetMapping
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;List&lt;Escala&gt;&gt; listar() {
+<span class="nc" id="L28">        return ResponseEntity.ok(escalaService.listarTodas());</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH','SUPERVISOR')&quot;)
+    public ResponseEntity&lt;Escala&gt; buscarPorId(@PathVariable UUID id) {
+<span class="nc" id="L34">        return ResponseEntity.ok(escalaService.buscarPorId(id));</span>
+    }
+
+    @PostMapping
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH')&quot;)
+    public ResponseEntity&lt;Escala&gt; criar(@Valid @RequestBody EscalaDto dto) {
+<span class="nc" id="L40">        Escala criada = escalaService.criar(dto);</span>
+<span class="nc" id="L41">        return ResponseEntity.status(HttpStatus.CREATED).body(criada);</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ADMIN','RH')&quot;)
+    public ResponseEntity&lt;Escala&gt; atualizar(@PathVariable UUID id, @Valid @RequestBody EscalaDto dto) {
+<span class="nc" id="L47">        return ResponseEntity.ok(escalaService.atualizar(id, dto));</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    @PreAuthorize(&quot;hasRole('TI')&quot;)
+    public ResponseEntity&lt;Void&gt; deletar(@PathVariable UUID id) {
+<span class="nc" id="L53">        escalaService.deletar(id);</span>
+<span class="nc" id="L54">        return ResponseEntity.noContent().build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

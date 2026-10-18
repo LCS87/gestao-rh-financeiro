@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Documento.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">Documento.java</span></div><h1>Documento.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;documentos&quot;)
+<span class="nc bnc" id="L14" title="All 126 branches missed.">@Data</span>
+<span class="nc" id="L15">@Builder</span>
+<span class="nc" id="L16">@NoArgsConstructor</span>
+<span class="nc" id="L17">@AllArgsConstructor</span>
+public class Documento {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L22">    private UUID id;</span>
+    
+    @Column(name = &quot;funcionario_id&quot;, nullable = false)
+<span class="nc" id="L25">    private UUID funcionarioId;</span>
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = &quot;tipo_documento&quot;, nullable = false)
+<span class="nc" id="L29">    private TipoDocumento tipoDocumento;</span>
+    
+    @Column(name = &quot;nome_arquivo&quot;, nullable = false)
+<span class="nc" id="L32">    private String nomeArquivo;</span>
+    
+    @Column(name = &quot;caminho_arquivo&quot;, nullable = false, length = 500)
+<span class="nc" id="L35">    private String caminhoArquivo;</span>
+    
+    @Column(name = &quot;tamanho_arquivo&quot;)
+<span class="nc" id="L38">    private Long tamanhoArquivo; // em bytes</span>
+    
+    @Column(name = &quot;tipo_mime&quot;)
+<span class="nc" id="L41">    private String tipoMime;</span>
+    
+    @Column(name = &quot;data_emissao&quot;)
+<span class="nc" id="L44">    private LocalDate dataEmissao;</span>
+    
+    @Column(name = &quot;data_validade&quot;)
+<span class="nc" id="L47">    private LocalDate dataValidade;</span>
+    
+    @Column(name = &quot;data_upload&quot;, nullable = false)
+<span class="nc" id="L50">    private LocalDate dataUpload;</span>
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+<span class="nc" id="L54">    private StatusDocumento status;</span>
+    
+    @Column(name = &quot;observacoes&quot;, length = 1000)
+<span class="nc" id="L57">    private String observacoes;</span>
+    
+    @Column(name = &quot;uploaded_by_id&quot;)
+<span class="nc" id="L60">    private UUID uploadedById;</span>
+    
+    @Column(name = &quot;created_at&quot;)
+<span class="nc" id="L63">    private LocalDate createdAt;</span>
+    
+    @Column(name = &quot;updated_at&quot;)
+<span class="nc" id="L66">    private LocalDate updatedAt;</span>
+    
+    @PrePersist
+    protected void onCreate() {
+<span class="nc" id="L70">        createdAt = LocalDate.now();</span>
+<span class="nc" id="L71">        updatedAt = LocalDate.now();</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (dataUpload == null) {</span>
+<span class="nc" id="L73">            dataUpload = LocalDate.now();</span>
+        }
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        if (status == null) {</span>
+<span class="nc" id="L76">            status = StatusDocumento.VALIDO;</span>
+        }
+<span class="nc" id="L78">    }</span>
+    
+    @PreUpdate
+    protected void onUpdate() {
+<span class="nc" id="L82">        updatedAt = LocalDate.now();</span>
+<span class="nc" id="L83">        atualizarStatus();</span>
+<span class="nc" id="L84">    }</span>
+    
+    public void atualizarStatus() {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (dataValidade != null) {</span>
+<span class="nc" id="L88">            LocalDate hoje = LocalDate.now();</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (hoje.isAfter(dataValidade)) {</span>
+<span class="nc" id="L90">                status = StatusDocumento.VENCIDO;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            } else if (hoje.isAfter(dataValidade.minusDays(30))) {</span>
+<span class="nc" id="L92">                status = StatusDocumento.A_VENCER;</span>
+            } else {
+<span class="nc" id="L94">                status = StatusDocumento.VALIDO;</span>
+            }
+<span class="nc" id="L96">        } else {</span>
+<span class="nc" id="L97">            status = StatusDocumento.VALIDO;</span>
+        }
+<span class="nc" id="L99">    }</span>
+    
+    public boolean estaVencido() {
+<span class="nc bnc" id="L102" title="All 4 branches missed.">        return dataValidade != null &amp;&amp; LocalDate.now().isAfter(dataValidade);</span>
+    }
+    
+    public boolean estaAVencer() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        return dataValidade != null </span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            &amp;&amp; LocalDate.now().isBefore(dataValidade) </span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            &amp;&amp; LocalDate.now().isAfter(dataValidade.minusDays(30));</span>
+    }
+    
+<span class="nc" id="L111">    public enum TipoDocumento {</span>
+<span class="nc" id="L112">        RG,</span>
+<span class="nc" id="L113">        CPF,</span>
+<span class="nc" id="L114">        CTPS,</span>
+<span class="nc" id="L115">        COMPROVANTE_RESIDENCIA,</span>
+<span class="nc" id="L116">        TITULO_ELEITOR,</span>
+<span class="nc" id="L117">        CERTIFICADO_RESERVISTA,</span>
+<span class="nc" id="L118">        EXAME_MEDICO,</span>
+<span class="nc" id="L119">        EXAME_DEMISSIONAL,</span>
+<span class="nc" id="L120">        CONTRATO_TRABALHO,</span>
+<span class="nc" id="L121">        TERMO_RESCISAO,</span>
+<span class="nc" id="L122">        ATESTADO_MEDICO,</span>
+<span class="nc" id="L123">        LICENCA_MEDICA,</span>
+<span class="nc" id="L124">        OUTROS</span>
+    }
+    
+<span class="nc" id="L127">    public enum StatusDocumento {</span>
+<span class="nc" id="L128">        VALIDO, A_VENCER, VENCIDO, INVALIDO</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

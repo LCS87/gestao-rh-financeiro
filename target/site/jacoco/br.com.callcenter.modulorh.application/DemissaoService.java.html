@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DemissaoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.application</a> &gt; <span class="el_source">DemissaoService.java</span></div><h1>DemissaoService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.application;
+
+import br.com.callcenter.core.exception.BusinessException;
+import br.com.callcenter.core.exception.ResourceNotFoundException;
+import br.com.callcenter.modulorh.api.dto.DemissaoDto;
+import br.com.callcenter.modulorh.domain.entity.Demissao;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.DemissaoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class DemissaoService {
+
+    private final DemissaoRepository demissaoRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final CalculoRescisaoService calculoRescisaoService;
+
+    public DemissaoService(DemissaoRepository demissaoRepository, 
+                          FuncionarioRepository funcionarioRepository,
+<span class="nc" id="L26">                          CalculoRescisaoService calculoRescisaoService) {</span>
+<span class="nc" id="L27">        this.demissaoRepository = demissaoRepository;</span>
+<span class="nc" id="L28">        this.funcionarioRepository = funcionarioRepository;</span>
+<span class="nc" id="L29">        this.calculoRescisaoService = calculoRescisaoService;</span>
+<span class="nc" id="L30">    }</span>
+
+    public List&lt;Demissao&gt; listarTodas() {
+<span class="nc" id="L33">        return demissaoRepository.findAll();</span>
+    }
+
+    public Demissao buscarPorId(UUID id) {
+<span class="nc" id="L37">        return demissaoRepository.findById(id)</span>
+<span class="nc" id="L38">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Demissão não encontrada&quot;));</span>
+    }
+
+    public Demissao buscarPorFuncionarioId(UUID funcionarioId) {
+<span class="nc" id="L42">        return demissaoRepository.findByFuncionarioId(funcionarioId)</span>
+<span class="nc" id="L43">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Demissão não encontrada para o funcionário&quot;));</span>
+    }
+
+    public Demissao criar(DemissaoDto dto) {
+        // Verificar se funcionário existe
+<span class="nc" id="L48">        Funcionario funcionario = funcionarioRepository.findById(dto.getFuncionarioId())</span>
+<span class="nc" id="L49">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+
+        // Verificar se já existe demissão para este funcionário
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (demissaoRepository.existsByFuncionarioId(dto.getFuncionarioId())) {</span>
+<span class="nc" id="L53">            throw new BusinessException(&quot;Já existe demissão cadastrada para este funcionário&quot;);</span>
+        }
+
+        // Verificar se funcionário está ativo
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (funcionario.getStatus() != Funcionario.StatusFuncionario.ATIVO) {</span>
+<span class="nc" id="L58">            throw new BusinessException(&quot;Funcionário não está ativo para ser demitido&quot;);</span>
+        }
+
+<span class="nc" id="L61">        Demissao demissao = mapearParaEntidade(new Demissao(), dto);</span>
+<span class="nc" id="L62">        demissao.setStatus(Demissao.StatusDemissao.INICIADA);</span>
+
+        // Atualizar funcionário
+<span class="nc" id="L65">        funcionario.setDataDemissao(dto.getDataDemissao());</span>
+<span class="nc" id="L66">        funcionario.setStatus(Funcionario.StatusFuncionario.INATIVO);</span>
+<span class="nc" id="L67">        funcionarioRepository.save(funcionario);</span>
+
+<span class="nc" id="L69">        return demissaoRepository.save(demissao);</span>
+    }
+
+    public Demissao calcularRescisao(UUID id) {
+<span class="nc" id="L73">        Demissao demissao = buscarPorId(id);</span>
+<span class="nc" id="L74">        Funcionario funcionario = funcionarioRepository.findById(demissao.getFuncionarioId())</span>
+<span class="nc" id="L75">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (demissao.getStatus() == Demissao.StatusDemissao.CALCULADA) {</span>
+<span class="nc" id="L78">            throw new BusinessException(&quot;Rescisão já foi calculada&quot;);</span>
+        }
+
+        // Calcular rescisão
+<span class="nc" id="L82">        calculoRescisaoService.calcularRescisao(demissao, funcionario);</span>
+
+<span class="nc" id="L84">        return demissaoRepository.save(demissao);</span>
+    }
+
+    public Demissao atualizar(UUID id, DemissaoDto dto) {
+<span class="nc" id="L88">        Demissao existente = buscarPorId(id);</span>
+        
+        // Verificar se funcionário existe
+<span class="nc" id="L91">        funcionarioRepository.findById(dto.getFuncionarioId())</span>
+<span class="nc" id="L92">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+
+<span class="nc" id="L94">        existente = mapearParaEntidade(existente, dto);</span>
+<span class="nc" id="L95">        return demissaoRepository.save(existente);</span>
+    }
+
+    public Demissao finalizarDemissao(UUID id) {
+<span class="nc" id="L99">        Demissao demissao = buscarPorId(id);</span>
+        
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (demissao.getStatus() != Demissao.StatusDemissao.CALCULADA) {</span>
+<span class="nc" id="L102">            throw new BusinessException(&quot;Não é possível finalizar demissão: rescisão não foi calculada&quot;);</span>
+        }
+
+<span class="nc" id="L105">        demissao.setStatus(Demissao.StatusDemissao.FINALIZADA);</span>
+<span class="nc" id="L106">        return demissaoRepository.save(demissao);</span>
+    }
+
+    public void deletar(UUID id) {
+<span class="nc" id="L110">        Demissao existente = buscarPorId(id);</span>
+<span class="nc" id="L111">        demissaoRepository.delete(existente);</span>
+<span class="nc" id="L112">    }</span>
+
+    private Demissao mapearParaEntidade(Demissao demissao, DemissaoDto dto) {
+<span class="nc" id="L115">        demissao.setFuncionarioId(dto.getFuncionarioId());</span>
+<span class="nc" id="L116">        demissao.setDataDemissao(dto.getDataDemissao());</span>
+<span class="nc" id="L117">        demissao.setTipoDemissao(dto.getTipoDemissao());</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (dto.getStatus() != null) {</span>
+<span class="nc" id="L119">            demissao.setStatus(dto.getStatus());</span>
+        }
+<span class="nc" id="L121">        demissao.setAvisoPrevioTrabalhado(dto.getAvisoPrevioTrabalhado());</span>
+<span class="nc" id="L122">        demissao.setAvisoPrevioIndenizado(dto.getAvisoPrevioIndenizado());</span>
+<span class="nc" id="L123">        demissao.setExameDemissionalRealizado(dto.getExameDemissionalRealizado());</span>
+<span class="nc" id="L124">        demissao.setDataExameDemissional(dto.getDataExameDemissional());</span>
+<span class="nc" id="L125">        demissao.setMotivo(dto.getMotivo());</span>
+<span class="nc" id="L126">        demissao.setObservacoes(dto.getObservacoes());</span>
+<span class="nc" id="L127">        demissao.setResponsavelDemissaoId(dto.getResponsavelDemissaoId());</span>
+<span class="nc" id="L128">        return demissao;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

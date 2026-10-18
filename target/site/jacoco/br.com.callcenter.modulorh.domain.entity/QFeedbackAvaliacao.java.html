@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QFeedbackAvaliacao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">QFeedbackAvaliacao.java</span></div><h1>QFeedbackAvaliacao.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import static com.querydsl.core.types.PathMetadataFactory.*;
+
+import com.querydsl.core.types.dsl.*;
+
+import com.querydsl.core.types.PathMetadata;
+import javax.annotation.processing.Generated;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.PathInits;
+
+
+/**
+ * QFeedbackAvaliacao is a Querydsl query type for FeedbackAvaliacao
+ */
+@Generated(&quot;com.querydsl.codegen.DefaultEntitySerializer&quot;)
+public class QFeedbackAvaliacao extends EntityPathBase&lt;FeedbackAvaliacao&gt; {
+
+    private static final long serialVersionUID = -1104710623L;
+
+<span class="nc" id="L21">    private static final PathInits INITS = PathInits.DIRECT2;</span>
+
+<span class="nc" id="L23">    public static final QFeedbackAvaliacao feedbackAvaliacao = new QFeedbackAvaliacao(&quot;feedbackAvaliacao&quot;);</span>
+
+    public final QAvaliacaoDesempenho avaliacao;
+
+<span class="nc" id="L27">    public final StringPath comentariosFuncionario = createString(&quot;comentariosFuncionario&quot;);</span>
+
+<span class="nc" id="L29">    public final StringPath comentariosGestor = createString(&quot;comentariosGestor&quot;);</span>
+
+<span class="nc" id="L31">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataAgendamento = createDateTime(&quot;dataAgendamento&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L33">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataAtualizacao = createDateTime(&quot;dataAtualizacao&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L35">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataCriacao = createDateTime(&quot;dataCriacao&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L37">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataFeedbackConcluido = createDateTime(&quot;dataFeedbackConcluido&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L39">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataFeedbackFuncionario = createDateTime(&quot;dataFeedbackFuncionario&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L41">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataFeedbackGestor = createDateTime(&quot;dataFeedbackGestor&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L43">    public final ComparablePath&lt;java.util.UUID&gt; id = createComparable(&quot;id&quot;, java.util.UUID.class);</span>
+
+<span class="nc" id="L45">    public final StringPath metasFuturas = createString(&quot;metasFuturas&quot;);</span>
+
+<span class="nc" id="L47">    public final StringPath pontosFortes = createString(&quot;pontosFortes&quot;);</span>
+
+<span class="nc" id="L49">    public final StringPath pontosMelhoria = createString(&quot;pontosMelhoria&quot;);</span>
+
+<span class="nc" id="L51">    public final EnumPath&lt;br.com.callcenter.modulorh.domain.enums.StatusFeedbackAvaliacao&gt; status = createEnum(&quot;status&quot;, br.com.callcenter.modulorh.domain.enums.StatusFeedbackAvaliacao.class);</span>
+
+    public QFeedbackAvaliacao(String variable) {
+<span class="nc" id="L54">        this(FeedbackAvaliacao.class, forVariable(variable), INITS);</span>
+<span class="nc" id="L55">    }</span>
+
+    public QFeedbackAvaliacao(Path&lt;? extends FeedbackAvaliacao&gt; path) {
+<span class="nc" id="L58">        this(path.getType(), path.getMetadata(), PathInits.getFor(path.getMetadata(), INITS));</span>
+<span class="nc" id="L59">    }</span>
+
+    public QFeedbackAvaliacao(PathMetadata metadata) {
+<span class="nc" id="L62">        this(metadata, PathInits.getFor(metadata, INITS));</span>
+<span class="nc" id="L63">    }</span>
+
+    public QFeedbackAvaliacao(PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L66">        this(FeedbackAvaliacao.class, metadata, inits);</span>
+<span class="nc" id="L67">    }</span>
+
+    public QFeedbackAvaliacao(Class&lt;? extends FeedbackAvaliacao&gt; type, PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L70">        super(type, metadata, inits);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        this.avaliacao = inits.isInitialized(&quot;avaliacao&quot;) ? new QAvaliacaoDesempenho(forProperty(&quot;avaliacao&quot;), inits.get(&quot;avaliacao&quot;)) : null;</span>
+<span class="nc" id="L72">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

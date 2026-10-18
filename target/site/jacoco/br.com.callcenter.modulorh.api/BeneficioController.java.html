@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BeneficioController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.api</a> &gt; <span class="el_source">BeneficioController.java</span></div><h1>BeneficioController.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.api;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.callcenter.modulorh.application.service.BeneficioService;
+import br.com.callcenter.modulorh.api.dto.FuncionarioBeneficioResponseDTO;
+import br.com.callcenter.modulorh.domain.entity.Beneficio;
+import br.com.callcenter.modulorh.domain.entity.FuncionarioBeneficio;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping(&quot;/api/beneficios&quot;)
+<span class="nc" id="L29">@RequiredArgsConstructor</span>
+@Tag(name = &quot;Gestão de Benefícios&quot;, description = &quot;API para gerenciamento de benefícios e associação com funcionários&quot;)
+public class BeneficioController {
+
+    private final BeneficioService beneficioService;
+
+    // Endpoints para Beneficios
+    @GetMapping
+    @Operation(summary = &quot;Listar todos os benefícios ativos&quot;)
+    public ResponseEntity&lt;List&lt;Beneficio&gt;&gt; listarBeneficiosAtivos() {
+<span class="nc" id="L39">        return ResponseEntity.ok(beneficioService.listarBeneficiosAtivos());</span>
+    }
+
+    @GetMapping(&quot;/opcionais&quot;)
+    @Operation(summary = &quot;Listar benefícios opcionais ativos&quot;)
+    public ResponseEntity&lt;List&lt;Beneficio&gt;&gt; listarBeneficiosOpcionaisAtivos() {
+<span class="nc" id="L45">        return ResponseEntity.ok(beneficioService.listarBeneficiosOpcionaisAtivos());</span>
+    }
+
+    @GetMapping(&quot;/obrigatorios&quot;)
+    @Operation(summary = &quot;Listar benefícios obrigatórios ativos&quot;)
+    public ResponseEntity&lt;List&lt;Beneficio&gt;&gt; listarBeneficiosObrigatoriosAtivos() {
+<span class="nc" id="L51">        return ResponseEntity.ok(beneficioService.listarBeneficiosObrigatoriosAtivos());</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Buscar benefício por ID&quot;)
+    public ResponseEntity&lt;Beneficio&gt; buscarBeneficioPorId(@PathVariable UUID id) {
+<span class="nc" id="L57">        return ResponseEntity.ok(beneficioService.buscarBeneficioPorId(id));</span>
+    }
+
+    @PostMapping
+    @Operation(summary = &quot;Criar novo benefício&quot;)
+    public ResponseEntity&lt;Beneficio&gt; criarBeneficio(@RequestBody Beneficio beneficio) {
+<span class="nc" id="L63">        return ResponseEntity.ok(beneficioService.criarBeneficio(beneficio));</span>
+    }
+
+    @PutMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Atualizar benefício existente&quot;)
+    public ResponseEntity&lt;Beneficio&gt; atualizarBeneficio(
+            @PathVariable UUID id, @RequestBody Beneficio beneficio) {
+<span class="nc" id="L70">        return ResponseEntity.ok(beneficioService.atualizarBeneficio(id, beneficio));</span>
+    }
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Desativar benefício (soft delete)&quot;)
+    public ResponseEntity&lt;Void&gt; desativarBeneficio(@PathVariable UUID id) {
+<span class="nc" id="L76">        beneficioService.desativarBeneficio(id);</span>
+<span class="nc" id="L77">        return ResponseEntity.noContent().build();</span>
+    }
+
+    // Endpoints para associação com funcionários
+    @PostMapping(&quot;/funcionarios/{funcionarioId}/beneficios/{beneficioId}&quot;)
+    @Operation(summary = &quot;Adicionar benefício a um funcionário&quot;)
+    public ResponseEntity&lt;FuncionarioBeneficio&gt; adicionarBeneficioAFuncionario(
+            @PathVariable UUID funcionarioId,
+            @PathVariable UUID beneficioId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
+
+<span class="nc" id="L89">        return ResponseEntity.ok(beneficioService.adicionarBeneficioAFuncionario(</span>
+                funcionarioId, beneficioId, dataInicio, dataFim));
+    }
+
+    @GetMapping(&quot;/funcionarios&quot;)
+    @Operation(summary = &quot;Listar todos os benefícios alocados a funcionários (DTO achatado)&quot;)
+    public ResponseEntity&lt;List&lt;FuncionarioBeneficioResponseDTO&gt;&gt; listarTodosFuncionariosBeneficios() {
+<span class="nc" id="L96">        return ResponseEntity.ok(beneficioService.listarTodosFuncionariosBeneficios());</span>
+    }
+
+    @GetMapping(&quot;/funcionarios/{funcionarioId}&quot;)
+    @Operation(summary = &quot;Listar benefícios de um funcionário&quot;)
+    public ResponseEntity&lt;List&lt;FuncionarioBeneficio&gt;&gt; listarBeneficiosPorFuncionario(
+            @PathVariable UUID funcionarioId) {
+<span class="nc" id="L103">        return ResponseEntity.ok(beneficioService.listarBeneficiosPorFuncionario(funcionarioId));</span>
+    }
+
+    @DeleteMapping(&quot;/funcionarios/{funcionarioId}/beneficios/{beneficioId}&quot;)
+    @Operation(summary = &quot;Remover benefício de um funcionário&quot;)
+    public ResponseEntity&lt;Void&gt; removerBeneficioDeFuncionario(
+            @PathVariable UUID funcionarioId,
+            @PathVariable UUID beneficioId) {
+
+<span class="nc" id="L112">        beneficioService.removerBeneficioDeFuncionario(funcionarioId, beneficioId);</span>
+<span class="nc" id="L113">        return ResponseEntity.noContent().build();</span>
+    }
+
+    @PutMapping(&quot;/funcionarios/{funcionarioId}/beneficios/{beneficioId}/data-fim&quot;)
+    @Operation(summary = &quot;Atualizar data de fim de um benefício para funcionário&quot;)
+    public ResponseEntity&lt;Void&gt; atualizarDataFimBeneficio(
+            @PathVariable UUID funcionarioId,
+            @PathVariable UUID beneficioId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate novaDataFim) {
+
+<span class="nc" id="L123">        beneficioService.atualizarDataFimBeneficio(funcionarioId, beneficioId, novaDataFim);</span>
+<span class="nc" id="L124">        return ResponseEntity.noContent().build();</span>
+    }
+
+    // Endpoints de consulta e relatórios
+    @GetMapping(&quot;/contagem/ativos&quot;)
+    @Operation(summary = &quot;Contar benefícios ativos&quot;)
+    public ResponseEntity&lt;Long&gt; contarBeneficiosAtivos() {
+<span class="nc" id="L131">        return ResponseEntity.ok(beneficioService.contarBeneficiosAtivos());</span>
+    }
+
+    @GetMapping(&quot;/{id}/contagem-funcionarios&quot;)
+    @Operation(summary = &quot;Contar funcionários com um benefício específico&quot;)
+    public ResponseEntity&lt;Long&gt; contarFuncionariosComBeneficio(@PathVariable UUID id) {
+<span class="nc" id="L137">        return ResponseEntity.ok(beneficioService.contarFuncionariosComBeneficio(id));</span>
+    }
+
+    @GetMapping(&quot;/custo-mensal-empresa&quot;)
+    @Operation(summary = &quot;Calcular custo mensal total da empresa com benefícios&quot;)
+    public ResponseEntity&lt;String&gt; calcularCustoTotalMensalEmpresa() {
+<span class="nc" id="L143">        return ResponseEntity.ok(&quot;Custo mensal: R$ &quot; +</span>
+<span class="nc" id="L144">                beneficioService.calcularCustoTotalMensalEmpresa().toString());</span>
+    }
+
+    @GetMapping(&quot;/resumo&quot;)
+    @Operation(summary = &quot;Obter resumo consolidado de benefícios&quot;)
+    public ResponseEntity&lt;Object[]&gt; obterResumoBeneficios() {
+<span class="nc" id="L150">        return ResponseEntity.ok(beneficioService.obterResumoBeneficios());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

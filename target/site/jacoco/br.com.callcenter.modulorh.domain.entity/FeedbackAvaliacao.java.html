@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FeedbackAvaliacao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">FeedbackAvaliacao.java</span></div><h1>FeedbackAvaliacao.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import br.com.callcenter.modulorh.domain.enums.StatusFeedbackAvaliacao;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;feedbacks_avaliacao&quot;)
+<span class="nc bnc" id="L14" title="All 118 branches missed.">@Data</span>
+<span class="nc" id="L15">@NoArgsConstructor</span>
+<span class="nc" id="L16">@AllArgsConstructor</span>
+public class FeedbackAvaliacao {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L21">    private UUID id;</span>
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;avaliacao_id&quot;, nullable = false)
+<span class="nc" id="L25">    private AvaliacaoDesempenho avaliacao;</span>
+
+<span class="nc" id="L27">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false, length = 50)
+<span class="nc" id="L29">    private StatusFeedbackAvaliacao status = StatusFeedbackAvaliacao.PENDENTE;</span>
+
+    @Column(name = &quot;comentarios_gestor&quot;, length = 2000)
+<span class="nc" id="L32">    private String comentariosGestor;</span>
+
+    @Column(name = &quot;comentarios_funcionario&quot;, length = 2000)
+<span class="nc" id="L35">    private String comentariosFuncionario;</span>
+
+    @Column(name = &quot;pontos_fortes&quot;, length = 2000)
+<span class="nc" id="L38">    private String pontosFortes;</span>
+
+    @Column(name = &quot;pontos_melhoria&quot;, length = 2000)
+<span class="nc" id="L41">    private String pontosMelhoria;</span>
+
+    @Column(name = &quot;metas_futuras&quot;, length = 2000)
+<span class="nc" id="L44">    private String metasFuturas;</span>
+
+    @Column(name = &quot;data_feedback_gestor&quot;)
+<span class="nc" id="L47">    private LocalDateTime dataFeedbackGestor;</span>
+
+    @Column(name = &quot;data_feedback_funcionario&quot;)
+<span class="nc" id="L50">    private LocalDateTime dataFeedbackFuncionario;</span>
+
+    @Column(name = &quot;data_feedback_concluido&quot;)
+<span class="nc" id="L53">    private LocalDateTime dataFeedbackConcluido;</span>
+
+    @Column(name = &quot;data_agendamento&quot;)
+<span class="nc" id="L56">    private LocalDateTime dataAgendamento;</span>
+
+<span class="nc" id="L58">    @Column(name = &quot;data_criacao&quot;, nullable = false)</span>
+<span class="nc" id="L59">    private LocalDateTime dataCriacao = LocalDateTime.now();</span>
+
+    @Column(name = &quot;data_atualizacao&quot;)
+<span class="nc" id="L62">    private LocalDateTime dataAtualizacao;</span>
+
+    @PreUpdate
+    public void preUpdate() {
+<span class="nc" id="L66">        this.dataAtualizacao = LocalDateTime.now();</span>
+<span class="nc" id="L67">    }</span>
+
+    // Construtor auxiliar
+<span class="nc" id="L70">    public FeedbackAvaliacao(AvaliacaoDesempenho avaliacao) {</span>
+<span class="nc" id="L71">        this.avaliacao = avaliacao;</span>
+<span class="nc" id="L72">        this.status = StatusFeedbackAvaliacao.PENDENTE;</span>
+<span class="nc" id="L73">        this.dataCriacao = LocalDateTime.now();</span>
+<span class="nc" id="L74">    }</span>
+
+    // Métodos auxiliares
+    public boolean isConcluido() {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        return status == StatusFeedbackAvaliacao.CONCLUIDO;</span>
+    }
+
+    public boolean isAguardandoGestor() {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        return status == StatusFeedbackAvaliacao.AGUARDANDO_GESTOR;</span>
+    }
+
+    public boolean isAguardandoFuncionario() {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        return status == StatusFeedbackAvaliacao.AGUARDANDO_FUNCIONARIO;</span>
+    }
+
+    public void iniciarFeedbackGestor() {
+<span class="nc" id="L90">        this.status = StatusFeedbackAvaliacao.AGUARDANDO_GESTOR;</span>
+<span class="nc" id="L91">    }</span>
+
+    public void completarFeedbackGestor(String comentarios) {
+<span class="nc" id="L94">        this.comentariosGestor = comentarios;</span>
+<span class="nc" id="L95">        this.dataFeedbackGestor = LocalDateTime.now();</span>
+<span class="nc" id="L96">        this.status = StatusFeedbackAvaliacao.AGUARDANDO_FUNCIONARIO;</span>
+<span class="nc" id="L97">    }</span>
+
+    public void completarFeedbackFuncionario(String comentarios) {
+<span class="nc" id="L100">        this.comentariosFuncionario = comentarios;</span>
+<span class="nc" id="L101">        this.dataFeedbackFuncionario = LocalDateTime.now();</span>
+<span class="nc" id="L102">        this.status = StatusFeedbackAvaliacao.CONCLUIDO;</span>
+<span class="nc" id="L103">        this.dataFeedbackConcluido = LocalDateTime.now();</span>
+<span class="nc" id="L104">    }</span>
+
+    public void agendarFeedback(LocalDateTime dataAgendamento) {
+<span class="nc" id="L107">        this.dataAgendamento = dataAgendamento;</span>
+<span class="nc" id="L108">        this.status = StatusFeedbackAvaliacao.AGENDADO;</span>
+<span class="nc" id="L109">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

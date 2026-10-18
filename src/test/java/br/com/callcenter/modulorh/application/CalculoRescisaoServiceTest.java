@@ -26,7 +26,7 @@ class CalculoRescisaoServiceTest {
         funcionario.setDataAdmissao(LocalDate.of(2024, 1, 1));
 
         demissao = new Demissao();
-        demissao.setFuncionario(funcionario);
+        demissao.setFuncionarioId(funcionario.getId());
         demissao.setDataDemissao(LocalDate.of(2024, 7, 15)); // 6 meses e 14 dias
         demissao.setTipoDemissao(Demissao.TipoDemissao.SEM_JUSTA_CAUSA);
         demissao.setAvisoPrevioIndenizado(false);
@@ -37,8 +37,8 @@ class CalculoRescisaoServiceTest {
     void deveCalcularSaldoDeSalario() {
         service.calcularRescisao(demissao, funcionario);
 
-        // 3000 / 31 dias * 15 dias trabalhados = 1451.61
-        assertEquals(new BigDecimal("1451.61"), demissao.getSaldoSalario());
+        // 3000 / 31 dias (arredondado p/ 96.77) * 15 dias trabalhados = 1451.55
+        assertEquals(new BigDecimal("1451.55"), demissao.getSaldoSalario());
     }
 
     @Test

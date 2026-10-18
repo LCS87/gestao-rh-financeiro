@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>QComissaoPaga.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulo_comissoes.domain.entity</a> &gt; <span class="el_source">QComissaoPaga.java</span></div><h1>QComissaoPaga.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulo_comissoes.domain.entity;
+
+import static com.querydsl.core.types.PathMetadataFactory.*;
+
+import com.querydsl.core.types.dsl.*;
+
+import com.querydsl.core.types.PathMetadata;
+import javax.annotation.processing.Generated;
+import com.querydsl.core.types.Path;
+import com.querydsl.core.types.dsl.PathInits;
+
+
+/**
+ * QComissaoPaga is a Querydsl query type for ComissaoPaga
+ */
+@Generated(&quot;com.querydsl.codegen.DefaultEntitySerializer&quot;)
+public class QComissaoPaga extends EntityPathBase&lt;ComissaoPaga&gt; {
+
+    private static final long serialVersionUID = 2078209108L;
+
+<span class="nc" id="L21">    private static final PathInits INITS = PathInits.DIRECT2;</span>
+
+<span class="nc" id="L23">    public static final QComissaoPaga comissaoPaga = new QComissaoPaga(&quot;comissaoPaga&quot;);</span>
+
+<span class="nc" id="L25">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataCriacao = createDateTime(&quot;dataCriacao&quot;, java.time.LocalDateTime.class);</span>
+
+<span class="nc" id="L27">    public final DateTimePath&lt;java.time.LocalDateTime&gt; dataPagamento = createDateTime(&quot;dataPagamento&quot;, java.time.LocalDateTime.class);</span>
+
+    public final br.com.callcenter.modulorh.domain.entity.QFuncionario funcionario;
+
+<span class="nc" id="L31">    public final ComparablePath&lt;java.util.UUID&gt; id = createComparable(&quot;id&quot;, java.util.UUID.class);</span>
+
+<span class="nc" id="L33">    public final StringPath mesReferencia = createString(&quot;mesReferencia&quot;);</span>
+
+<span class="nc" id="L35">    public final StringPath observacoes = createString(&quot;observacoes&quot;);</span>
+
+<span class="nc" id="L37">    public final StringPath status = createString(&quot;status&quot;);</span>
+
+<span class="nc" id="L39">    public final NumberPath&lt;java.math.BigDecimal&gt; valorComissao = createNumber(&quot;valorComissao&quot;, java.math.BigDecimal.class);</span>
+
+    public final QVendaComissao vendaComissao;
+
+    public QComissaoPaga(String variable) {
+<span class="nc" id="L44">        this(ComissaoPaga.class, forVariable(variable), INITS);</span>
+<span class="nc" id="L45">    }</span>
+
+    public QComissaoPaga(Path&lt;? extends ComissaoPaga&gt; path) {
+<span class="nc" id="L48">        this(path.getType(), path.getMetadata(), PathInits.getFor(path.getMetadata(), INITS));</span>
+<span class="nc" id="L49">    }</span>
+
+    public QComissaoPaga(PathMetadata metadata) {
+<span class="nc" id="L52">        this(metadata, PathInits.getFor(metadata, INITS));</span>
+<span class="nc" id="L53">    }</span>
+
+    public QComissaoPaga(PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L56">        this(ComissaoPaga.class, metadata, inits);</span>
+<span class="nc" id="L57">    }</span>
+
+    public QComissaoPaga(Class&lt;? extends ComissaoPaga&gt; type, PathMetadata metadata, PathInits inits) {
+<span class="nc" id="L60">        super(type, metadata, inits);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        this.funcionario = inits.isInitialized(&quot;funcionario&quot;) ? new br.com.callcenter.modulorh.domain.entity.QFuncionario(forProperty(&quot;funcionario&quot;)) : null;</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        this.vendaComissao = inits.isInitialized(&quot;vendaComissao&quot;) ? new QVendaComissao(forProperty(&quot;vendaComissao&quot;), inits.get(&quot;vendaComissao&quot;)) : null;</span>
+<span class="nc" id="L63">    }</span>
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

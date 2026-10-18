@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ContrachequeService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulofinanceiro.application</a> &gt; <span class="el_source">ContrachequeService.java</span></div><h1>ContrachequeService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulofinanceiro.application;
+
+import br.com.callcenter.core.exception.ResourceNotFoundException;
+import br.com.callcenter.modulofinanceiro.domain.entity.FolhaPagamento;
+import br.com.callcenter.modulofinanceiro.infrastructure.repository.FolhaPagamentoRepository;
+import br.com.callcenter.modulorh.domain.entity.Cargo;
+import br.com.callcenter.modulorh.domain.entity.Departamento;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.CargoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.DepartamentoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import lombok.extern.slf4j.Slf4j;
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.design.JRDesignBand;
+import net.sf.jasperreports.engine.design.JRDesignSection;
+import net.sf.jasperreports.engine.design.JRDesignStaticText;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.SplitTypeEnum;
+import net.sf.jasperreports.engine.util.JRLoader;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.YearMonth;
+import java.util.*;
+
+@Service
+<span class="nc" id="L34">@Slf4j</span>
+public class ContrachequeService {
+
+    private final FolhaPagamentoRepository folhaPagamentoRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final CargoRepository cargoRepository;
+    private final DepartamentoRepository departamentoRepository;
+
+    public ContrachequeService(FolhaPagamentoRepository folhaPagamentoRepository,
+                               FuncionarioRepository funcionarioRepository,
+                               CargoRepository cargoRepository,
+<span class="nc" id="L45">                               DepartamentoRepository departamentoRepository) {</span>
+<span class="nc" id="L46">        this.folhaPagamentoRepository = folhaPagamentoRepository;</span>
+<span class="nc" id="L47">        this.funcionarioRepository = funcionarioRepository;</span>
+<span class="nc" id="L48">        this.cargoRepository = cargoRepository;</span>
+<span class="nc" id="L49">        this.departamentoRepository = departamentoRepository;</span>
+<span class="nc" id="L50">    }</span>
+
+    public byte[] gerarContracheque(UUID folhaId) throws Exception {
+<span class="nc" id="L53">        FolhaPagamento folha = folhaPagamentoRepository.findById(folhaId)</span>
+<span class="nc" id="L54">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Folha de pagamento não encontrada&quot;));</span>
+
+<span class="nc" id="L56">        Funcionario funcionario = funcionarioRepository.findById(folha.getFuncionarioId())</span>
+<span class="nc" id="L57">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+
+<span class="nc" id="L59">        Map&lt;String, Object&gt; parameters = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L60">        parameters.put(&quot;FUNCIONARIO_NOME&quot;, funcionario.getNome());</span>
+<span class="nc" id="L61">        parameters.put(&quot;FUNCIONARIO_CPF&quot;, funcionario.getCpf());</span>
+<span class="nc" id="L62">        parameters.put(&quot;FUNCIONARIO_CARGO&quot;, resolverCargo(funcionario));</span>
+<span class="nc" id="L63">        parameters.put(&quot;FUNCIONARIO_DEPARTAMENTO&quot;, resolverDepartamento(funcionario));</span>
+<span class="nc" id="L64">        parameters.put(&quot;MES_ANO&quot;, formatarMesAno(folha.getAnoMes()));</span>
+<span class="nc" id="L65">        parameters.put(&quot;DATA_EMISSAO&quot;, LocalDate.now().format(DateTimeFormatter.ofPattern(&quot;dd/MM/yyyy&quot;)));</span>
+<span class="nc" id="L66">        parameters.put(&quot;SALARIO_BASE&quot;, formatarMoeda(folha.getSalarioBase()));</span>
+
+        // Proventos
+<span class="nc" id="L69">        parameters.put(&quot;HORAS_EXTRAS&quot;, formatarMoeda(folha.getHorasExtras()));</span>
+<span class="nc" id="L70">        parameters.put(&quot;ADICIONAL_NOTURNO&quot;, formatarMoeda(folha.getAdicionalNoturno()));</span>
+<span class="nc" id="L71">        parameters.put(&quot;COMISSOES&quot;, formatarMoeda(folha.getComissoes()));</span>
+<span class="nc" id="L72">        parameters.put(&quot;BONUS&quot;, formatarMoeda(folha.getBonus()));</span>
+<span class="nc" id="L73">        parameters.put(&quot;FERIAS&quot;, formatarMoeda(folha.getFerias()));</span>
+<span class="nc" id="L74">        parameters.put(&quot;DECIMO_TERCEIRO&quot;, formatarMoeda(folha.getDecimoTerceiro()));</span>
+<span class="nc" id="L75">        parameters.put(&quot;OUTROS_PROVENTOS&quot;, formatarMoeda(folha.getOutrosProventos()));</span>
+<span class="nc" id="L76">        parameters.put(&quot;TOTAL_PROVENTOS&quot;, formatarMoeda(folha.getTotalProventos()));</span>
+
+        // Descontos
+<span class="nc" id="L79">        parameters.put(&quot;INSS&quot;, formatarMoeda(folha.getInss()));</span>
+<span class="nc" id="L80">        parameters.put(&quot;IRRF&quot;, formatarMoeda(folha.getIrrf()));</span>
+<span class="nc" id="L81">        parameters.put(&quot;FGTS&quot;, formatarMoeda(folha.getFgts()));</span>
+<span class="nc" id="L82">        parameters.put(&quot;VALE_TRANSPORTE&quot;, formatarMoeda(folha.getValeTransporte()));</span>
+<span class="nc" id="L83">        parameters.put(&quot;VALE_REFEICAO&quot;, formatarMoeda(folha.getValeRefeicao()));</span>
+<span class="nc" id="L84">        parameters.put(&quot;PLANO_SAUDE&quot;, formatarMoeda(folha.getPlanoSaude()));</span>
+<span class="nc" id="L85">        parameters.put(&quot;OUTROS_DESCONTOS&quot;, formatarMoeda(folha.getOutrosDescontos()));</span>
+<span class="nc" id="L86">        parameters.put(&quot;TOTAL_DESCONTOS&quot;, formatarMoeda(folha.getTotalDescontos()));</span>
+
+        // Total
+<span class="nc" id="L89">        parameters.put(&quot;SALARIO_LIQUIDO&quot;, formatarMoeda(folha.getSalarioLiquido()));</span>
+
+        // Dados bancários
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (folha.getBancoPagamento() != null) {</span>
+<span class="nc" id="L93">            parameters.put(&quot;BANCO_PAGAMENTO&quot;, folha.getBancoPagamento());</span>
+<span class="nc" id="L94">            parameters.put(&quot;AGENCIA_PAGAMENTO&quot;, folha.getAgenciaPagamento());</span>
+<span class="nc" id="L95">            parameters.put(&quot;CONTA_PAGAMENTO&quot;, folha.getContaPagamento());</span>
+        }
+
+        // Gera o PDF usando JasperReports
+<span class="nc" id="L99">        return gerarPdfJasper(parameters);</span>
+    }
+
+    private byte[] gerarPdfJasper(Map&lt;String, Object&gt; parameters) throws Exception {
+        try {
+            // Tenta carregar o arquivo .jasper compilado
+<span class="nc" id="L105">            InputStream jasperStream = new ClassPathResource(&quot;reports/contracheque.jasper&quot;).getInputStream();</span>
+<span class="nc" id="L106">            JasperReport jasperReport = (JasperReport) JRLoader.loadObject(jasperStream);</span>
+
+<span class="nc" id="L108">            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource());</span>
+<span class="nc" id="L109">            return JasperExportManager.exportReportToPdf(jasperPrint);</span>
+            
+            // Se não encontrar o .jasper, tenta compilar do .jrxml
+<span class="nc" id="L112">        } catch (IOException e) {</span>
+<span class="nc" id="L113">            log.info(&quot;Arquivo .jasper não encontrado, tentando compilar do .jrxml&quot;);</span>
+            try {
+<span class="nc" id="L115">                InputStream jrxmlStream = new ClassPathResource(&quot;reports/contracheque.jrxml&quot;).getInputStream();</span>
+<span class="nc" id="L116">                JasperReport jasperReport = JasperCompileManager.compileReport(jrxmlStream);</span>
+                
+<span class="nc" id="L118">                JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource());</span>
+<span class="nc" id="L119">                return JasperExportManager.exportReportToPdf(jasperPrint);</span>
+<span class="nc" id="L120">            } catch (IOException ex) {</span>
+<span class="nc" id="L121">                log.warn(&quot;Arquivo .jrxml não encontrado, gerando PDF simplificado&quot;);</span>
+<span class="nc" id="L122">                return gerarPdfSimplificado(parameters);</span>
+            }
+        }
+    }
+
+    private String resolverCargo(Funcionario funcionario) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (funcionario.getCargoId() == null) return &quot;&quot;;</span>
+        try {
+<span class="nc" id="L130">            return cargoRepository.findById(funcionario.getCargoId())</span>
+<span class="nc" id="L131">                    .map(Cargo::getNome)</span>
+<span class="nc" id="L132">                    .orElse(&quot;&quot;);</span>
+<span class="nc" id="L133">        } catch (Exception e) {</span>
+<span class="nc" id="L134">            log.warn(&quot;Não foi possível resolver o cargo do funcionário {}&quot;, funcionario.getId(), e);</span>
+<span class="nc" id="L135">            return &quot;&quot;;</span>
+        }
+    }
+
+    private String resolverDepartamento(Funcionario funcionario) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        if (funcionario.getDepartamentoId() == null) return &quot;&quot;;</span>
+        try {
+<span class="nc" id="L142">            return departamentoRepository.findById(funcionario.getDepartamentoId())</span>
+<span class="nc" id="L143">                    .map(Departamento::getNome)</span>
+<span class="nc" id="L144">                    .orElse(&quot;&quot;);</span>
+<span class="nc" id="L145">        } catch (Exception e) {</span>
+<span class="nc" id="L146">            log.warn(&quot;Não foi possível resolver o departamento do funcionário {}&quot;, funcionario.getId(), e);</span>
+<span class="nc" id="L147">            return &quot;&quot;;</span>
+        }
+    }
+
+    private byte[] gerarPdfSimplificado(Map&lt;String, Object&gt; parameters) throws Exception {
+        // Fallback: gera um PDF real em memória construindo o relatório dinamicamente
+        // via JasperReports (sem depender de arquivo .jasper/.jrxml no classpath).
+<span class="nc" id="L154">        JasperDesign design = new JasperDesign();</span>
+<span class="nc" id="L155">        design.setName(&quot;ContrachequeFallback&quot;);</span>
+<span class="nc" id="L156">        design.setPageWidth(595);   // A4 em pontos</span>
+<span class="nc" id="L157">        design.setPageHeight(842);</span>
+<span class="nc" id="L158">        design.setColumnWidth(555);</span>
+<span class="nc" id="L159">        design.setLeftMargin(20);</span>
+<span class="nc" id="L160">        design.setRightMargin(20);</span>
+<span class="nc" id="L161">        design.setTopMargin(20);</span>
+<span class="nc" id="L162">        design.setBottomMargin(20);</span>
+
+<span class="nc" id="L164">        JRDesignBand titleBand = new JRDesignBand();</span>
+<span class="nc" id="L165">        titleBand.setHeight(30);</span>
+<span class="nc" id="L166">        titleBand.addElement(staticText(0, 5, 555, 20, &quot;CONTRACHEQUE - DEMONSTRATIVO DE PAGAMENTO&quot;, true));</span>
+<span class="nc" id="L167">        design.setTitle(titleBand);</span>
+
+<span class="nc" id="L169">        JRDesignBand detailBand = new JRDesignBand();</span>
+<span class="nc" id="L170">        detailBand.setHeight(16);</span>
+<span class="nc" id="L171">        int y = 0;</span>
+<span class="nc" id="L172">        String[][] secoes = {</span>
+                {&quot;IDENTIFICACAO&quot;, &quot;FUNCIONARIO_NOME&quot;, &quot;FUNCIONARIO_CPF&quot;, &quot;FUNCIONARIO_CARGO&quot;,
+                        &quot;FUNCIONARIO_DEPARTAMENTO&quot;, &quot;MES_ANO&quot;, &quot;DATA_EMISSAO&quot;},
+                {&quot;PROVENTOS&quot;, &quot;SALARIO_BASE&quot;, &quot;HORAS_EXTRAS&quot;, &quot;ADICIONAL_NOTURNO&quot;, &quot;COMISSOES&quot;,
+                        &quot;BONUS&quot;, &quot;FERIAS&quot;, &quot;DECIMO_TERCEIRO&quot;, &quot;OUTROS_PROVENTOS&quot;, &quot;TOTAL_PROVENTOS&quot;},
+                {&quot;DESCONTOS&quot;, &quot;INSS&quot;, &quot;IRRF&quot;, &quot;FGTS&quot;, &quot;VALE_TRANSPORTE&quot;, &quot;VALE_REFEICAO&quot;,
+                        &quot;PLANO_SAUDE&quot;, &quot;OUTROS_DESCONTOS&quot;, &quot;TOTAL_DESCONTOS&quot;},
+                {&quot;LIQUIDO&quot;, &quot;SALARIO_LIQUIDO&quot;}
+        };
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        for (String[] secao : secoes) {</span>
+<span class="nc" id="L182">            detailBand.addElement(staticText(0, y, 555, 14, secao[0], true));</span>
+<span class="nc" id="L183">            y += 14;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            for (int i = 1; i &lt; secao.length; i++) {</span>
+<span class="nc" id="L185">                Object v = parameters.get(secao[i]);</span>
+<span class="nc bnc" id="L186" title="All 4 branches missed.">                if (v != null &amp;&amp; !v.toString().isEmpty()) {</span>
+<span class="nc" id="L187">                    detailBand.addElement(staticText(10, y, 545, 14,</span>
+<span class="nc" id="L188">                            rotulo(secao[i]) + &quot;: &quot; + v, false));</span>
+<span class="nc" id="L189">                    y += 14;</span>
+                }
+            }
+<span class="nc" id="L192">            y += 6;</span>
+        }
+<span class="nc" id="L194">        detailBand.setSplitType(SplitTypeEnum.STRETCH);</span>
+
+        // JasperReports 6.x não expõe setDetailSection público no JasperDesign;
+        // usamos reflection para injetar a seção de detalhe (fallback controlado).
+<span class="nc" id="L198">        JRDesignSection detailSection = new JRDesignSection(null);</span>
+<span class="nc" id="L199">        detailSection.addBand(detailBand);</span>
+<span class="nc" id="L200">        java.lang.reflect.Field detailField =</span>
+<span class="nc" id="L201">                net.sf.jasperreports.engine.base.JRBaseReport.class.getDeclaredField(&quot;detailSection&quot;);</span>
+<span class="nc" id="L202">        detailField.setAccessible(true);</span>
+<span class="nc" id="L203">        detailField.set(design, detailSection);</span>
+
+        // Os valores já estão embutidos como staticText no band, então o preenchimento
+        // usa fonte vazia e produz um PDF real do demonstrativo.
+<span class="nc" id="L207">        JasperReport jasperReport = JasperCompileManager.compileReport(design);</span>
+<span class="nc" id="L208">        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, null, new JREmptyDataSource(1));</span>
+<span class="nc" id="L209">        return JasperExportManager.exportReportToPdf(jasperPrint);</span>
+    }
+
+    private JRDesignStaticText staticText(int x, int y, int width, int height, String text, boolean bold) {
+<span class="nc" id="L213">        JRDesignStaticText staticText = new JRDesignStaticText();</span>
+<span class="nc" id="L214">        staticText.setX(x);</span>
+<span class="nc" id="L215">        staticText.setY(y);</span>
+<span class="nc" id="L216">        staticText.setWidth(width);</span>
+<span class="nc" id="L217">        staticText.setHeight(height);</span>
+<span class="nc" id="L218">        staticText.setText(text);</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">        staticText.setFontSize(bold ? 11f : 9f);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (bold) {</span>
+<span class="nc" id="L221">            staticText.setBold(Boolean.TRUE);</span>
+        }
+<span class="nc" id="L223">        return staticText;</span>
+    }
+
+    private String rotulo(String chave) {
+<span class="nc bnc" id="L227" title="All 25 branches missed.">        switch (chave) {</span>
+<span class="nc" id="L228">            case &quot;FUNCIONARIO_NOME&quot;: return &quot;Funcionario&quot;;</span>
+<span class="nc" id="L229">            case &quot;FUNCIONARIO_CPF&quot;: return &quot;CPF&quot;;</span>
+<span class="nc" id="L230">            case &quot;FUNCIONARIO_CARGO&quot;: return &quot;Cargo&quot;;</span>
+<span class="nc" id="L231">            case &quot;FUNCIONARIO_DEPARTAMENTO&quot;: return &quot;Departamento&quot;;</span>
+<span class="nc" id="L232">            case &quot;MES_ANO&quot;: return &quot;Mes/Ano&quot;;</span>
+<span class="nc" id="L233">            case &quot;DATA_EMISSAO&quot;: return &quot;Emissao&quot;;</span>
+<span class="nc" id="L234">            case &quot;SALARIO_BASE&quot;: return &quot;Salario Base&quot;;</span>
+<span class="nc" id="L235">            case &quot;HORAS_EXTRAS&quot;: return &quot;Horas Extras&quot;;</span>
+<span class="nc" id="L236">            case &quot;ADICIONAL_NOTURNO&quot;: return &quot;Adicional Noturno&quot;;</span>
+<span class="nc" id="L237">            case &quot;COMISSOES&quot;: return &quot;Comissoes&quot;;</span>
+<span class="nc" id="L238">            case &quot;BONUS&quot;: return &quot;Bonus&quot;;</span>
+<span class="nc" id="L239">            case &quot;FERIAS&quot;: return &quot;Ferias&quot;;</span>
+<span class="nc" id="L240">            case &quot;DECIMO_TERCEIRO&quot;: return &quot;13o Salario&quot;;</span>
+<span class="nc" id="L241">            case &quot;OUTROS_PROVENTOS&quot;: return &quot;Outros Proventos&quot;;</span>
+<span class="nc" id="L242">            case &quot;TOTAL_PROVENTOS&quot;: return &quot;Total Proventos&quot;;</span>
+<span class="nc" id="L243">            case &quot;INSS&quot;: return &quot;INSS&quot;;</span>
+<span class="nc" id="L244">            case &quot;IRRF&quot;: return &quot;IRRF&quot;;</span>
+<span class="nc" id="L245">            case &quot;FGTS&quot;: return &quot;FGTS&quot;;</span>
+<span class="nc" id="L246">            case &quot;VALE_TRANSPORTE&quot;: return &quot;Vale Transporte&quot;;</span>
+<span class="nc" id="L247">            case &quot;VALE_REFEICAO&quot;: return &quot;Vale Refeicao&quot;;</span>
+<span class="nc" id="L248">            case &quot;PLANO_SAUDE&quot;: return &quot;Plano de Saude&quot;;</span>
+<span class="nc" id="L249">            case &quot;OUTROS_DESCONTOS&quot;: return &quot;Outros Descontos&quot;;</span>
+<span class="nc" id="L250">            case &quot;TOTAL_DESCONTOS&quot;: return &quot;Total Descontos&quot;;</span>
+<span class="nc" id="L251">            case &quot;SALARIO_LIQUIDO&quot;: return &quot;SALARIO LIQUIDO&quot;;</span>
+<span class="nc" id="L252">            default: return chave;</span>
+        }
+    }
+
+    private String formatarMesAno(String anoMes) {
+<span class="nc bnc" id="L257" title="All 4 branches missed.">        if (anoMes == null || anoMes.length() != 7) return &quot;&quot;;</span>
+        
+<span class="nc" id="L259">        YearMonth yearMonth = YearMonth.parse(anoMes, DateTimeFormatter.ofPattern(&quot;yyyy-MM&quot;));</span>
+<span class="nc" id="L260">        String[] meses = {&quot;Janeiro&quot;, &quot;Fevereiro&quot;, &quot;Março&quot;, &quot;Abril&quot;, &quot;Maio&quot;, &quot;Junho&quot;,</span>
+                         &quot;Julho&quot;, &quot;Agosto&quot;, &quot;Setembro&quot;, &quot;Outubro&quot;, &quot;Novembro&quot;, &quot;Dezembro&quot;};
+        
+<span class="nc" id="L263">        return meses[yearMonth.getMonthValue() - 1] + &quot;/&quot; + yearMonth.getYear();</span>
+    }
+
+    private String formatarMoeda(BigDecimal valor) {
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (valor == null) return &quot;R$ 0,00&quot;;</span>
+<span class="nc" id="L268">        return String.format(&quot;R$ %,.2f&quot;, valor);</span>
+    }
+
+    public List&lt;Map&lt;String, Object&gt;&gt; listarContrachequesPorMes(String anoMes) {
+<span class="nc" id="L272">        List&lt;FolhaPagamento&gt; folhas = folhaPagamentoRepository.findByAnoMes(anoMes);</span>
+<span class="nc" id="L273">        List&lt;Map&lt;String, Object&gt;&gt; resultado = new ArrayList&lt;&gt;();</span>
+        
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        for (FolhaPagamento folha : folhas) {</span>
+<span class="nc" id="L276">            Funcionario funcionario = funcionarioRepository.findById(folha.getFuncionarioId())</span>
+<span class="nc" id="L277">                    .orElse(null);</span>
+            
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            if (funcionario != null) {</span>
+<span class="nc" id="L280">                Map&lt;String, Object&gt; item = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L281">                item.put(&quot;id&quot;, folha.getId());</span>
+<span class="nc" id="L282">                item.put(&quot;funcionarioNome&quot;, funcionario.getNome());</span>
+<span class="nc" id="L283">                item.put(&quot;funcionarioCpf&quot;, funcionario.getCpf());</span>
+<span class="nc" id="L284">                item.put(&quot;mesAno&quot;, formatarMesAno(folha.getAnoMes()));</span>
+<span class="nc" id="L285">                item.put(&quot;salarioLiquido&quot;, folha.getSalarioLiquido());</span>
+<span class="nc" id="L286">                item.put(&quot;status&quot;, folha.getStatus());</span>
+<span class="nc" id="L287">                item.put(&quot;dataPagamento&quot;, folha.getDataPagamento());</span>
+<span class="nc" id="L288">                resultado.add(item);</span>
+            }
+<span class="nc" id="L290">        }</span>
+        
+<span class="nc" id="L292">        return resultado;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

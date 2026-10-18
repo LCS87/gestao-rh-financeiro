@@ -18,43 +18,39 @@ Este sistema foi projetado para resolver os principais desafios de gestão de RH
 
 ### Estrutura Modular
 
-O sistema segue uma arquitetura **Monolito Modular** com comunicação assíncrona:
+O sistema é um **Monolito Modular Maven** (um único JAR) organizado por packages em `src/main/java/br/com/callcenter/`:
 
 ```
-gestao-rh-financeiro/
-├── core/                      # Módulo base com configurações comuns
-├── modulo-rh/                  # Módulo de Recursos Humanos
-├── modulo-financeiro/          # Módulo Financeiro
-├── modulo-comissoes/           # Módulo de Comissões
-├── modulo-documentos/          # Módulo de Gestão Documental
-├── modulo-dashboard/           # Módulo de Relatórios e Dashboards
-└── modulo-notificacoes/        # Módulo de Notificações Internas
+br.com.callcenter/
+├── core/                  # Segurança (JWT), config, auditoria, usuários, parâmetros
+├── modulorh/              # Funcionários, departamentos, ponto, escalas, férias,
+│                          # admissão/demissão, documentos, vendas, benefícios, engajamento
+├── modulofinanceiro/      # Contas, folha de pagamento, agendamentos, contracheques
+├── modulo_comissoes/      # Regras de comissão, apuração e simulação
+├── moduloanalytics/       # Indicadores e analytics (parcial — placeholders restantes)
+└── modulorelatorios/      # Relatórios gerenciais (CSV + PDF via JasperReports)
 ```
 
-Cada módulo segue a estrutura **Clean Architecture**:
+Dentro de cada package, a organização segue camadas **API (Controller) → Application (Service) → Domain (Entidades/regras) → Infrastructure (Repositories)**, sem fronteiras físicas de módulo Maven.
 
-- **API (Controller)**: Interfaces REST, validação de entrada
-- **Application (Service)**: Orquestração, casos de uso, transações
-- **Domain**: Entidades, Value Objects, regras de negócio
-- **Infrastructure**: Repositórios, integrações, acesso a dados
+> ⚠️ *Planejado vs real*: módulos separados (ex.: `modulo-notificacoes`, `modulo-dashboard`) e RabbitMQ como mensageria **não existem no código** — documentos ficam dentro de `modulorh` e o RabbitMQ roda apenas no docker-compose sem producer/consumer. Ver seção "Pendências".
 
 ## 🛠️ Tecnologias
 
 ### Backend
 - **Java 17 LTS**
 - **Spring Boot 3.1.x**
-- **Spring Security + JWT**
+- **Spring Security + JWT** (com `@EnableMethodSecurity` / RBAC ativo)
 - **Spring Data JPA + Hibernate**
-- **PostgreSQL 15**
-- **Redis 7** (Cache)
-- **RabbitMQ 3.12** (Comunicação assíncrona)
-- **Flyway** (Migrações de banco)
-- **JasperReports** (Relatórios PDF)
+- **PostgreSQL 15** (docker-compose: porta 5432, banco `gestao_rh_financeiro`)
+- **Redis 7** (declarado; uso atual limitado a `@Cacheable` em parâmetros)
+- **Flyway** (V1–V9, V12–V17; perfil base com Flyway ativo apontando para o compose)
+- **JasperReports** (Relatórios PDF e contracheque)
 - **SpringDoc OpenAPI** (Documentação API)
 
 ### Frontend
 - **React 19** + **TypeScript**
-- **Vite 7** (build)
+- **Vite 7** (build; dev server na porta **3007**)
 - **React Router** (navegação)
 - **TanStack Query** (dados)
 - **Tailwind CSS** (estilos)
@@ -62,9 +58,8 @@ Cada módulo segue a estrutura **Clean Architecture**:
 - **Lucide React** (ícones)
 
 ### Infraestrutura
-- **Docker & Docker Compose** (Desenvolvimento)
-- **Nginx** (Proxy reverso - produção)
-- **Prometheus + Grafana** (Monitoramento)
+- **Docker & Docker Compose** (apenas infra: Postgres, Redis, RabbitMQ — Dockerfile da aplicação ainda pendente)
+- ~~Nginx / Prometheus / Grafana~~ (planejados, **não implementados**)
 
 ## 🚀 Como Executar
 
@@ -160,52 +155,25 @@ npm run format
 7. **Acesse a aplicação**
 
 #### 🏠 Acesso Local (Rede Interna)
-- **Interface web**: http://localhost:3000
+- **Interface web**: http://localhost:3007 (porta configurada no `vite.config.ts`)
 - **API**: http://localhost:8080
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **Swagger UI**: http://localhost:8080/swagger-ui.html (autenticação exigida em produção)
 - **API Docs**: http://localhost:8080/api-docs
-- **Health**: http://localhost:8080/actuator/health
-- **RabbitMQ**: http://localhost:15672 (guest/guest)
+- **Health**: http://localhost:8080/actuator/health (protegido — apenas ROLE_TI/ADMIN)
+- **PostgreSQL**: localhost:5432 / banco `gestao_rh_financeiro` (via docker-compose)
 
 #### 📱 Acesso Remoto (Mesma Rede Wi-Fi)
-- **Dispositivos móveis**: http://192.168.0.5:3004
-- **Outros computadores**: http://192.168.0.5:3004
-- **Smart TVs**: http://192.168.0.5:3004
+- Ajuste o IP da máquina local (`ipconfig`/`ifconfig`) e acesse via rede: `http://SEU_IP:3007` (Vite configurado com `host: 0.0.0.0`).
 
-#### 🌐 Acesso Externo (Qualquer Lugar)
-Para acessar o sistema de outra rede, use uma das opções abaixo:
-
-**Opção 1: NGROK (Recomendado - 5 minutos)**
-```bash
-# 1. Criar conta em https://dashboard.ngrok.com/signup
-# 2. Obter authtoken em https://dashboard.ngrok.com/get-started/your-authtoken
-# 3. Configurar:
-cd frontend
-.\ngrok.exe config add-authtoken SEU_TOKEN
-# 4. Iniciar túnel:
-.\ngrok.exe http 3004
-# 5. Usar URL gerada: https://xxxxx.ngrok.io
-```
-
-**Opção 2: VPN Corporativa**
-- Configurar servidor VPN no Windows
-- Conectar-se remotamente via VPN
-- Acessar: http://localhost:3004
-
-**Opção 3: Port Forwarding**
-- Configurar roteador: Porta Externa 3004 → IP Interno 192.168.0.5:3004
-- Acessar: http://187.19.172.104:3004
-
-> **Importante**: O sistema está configurado com `host: '0.0.0.0'` para permitir acesso externo. Use NGROK para acesso rápido e seguro.
+#### 🌐 Acesso Externo
+> ⚠️ **Nota de segurança**: exposição via túnel (ngrok, port forwarding etc.) é prática de laboratório/desenvolvimento, **não recomendada para produção**. Para deploy real, use HTTPS com Nginx/reverse proxy autenticado e CORS restrito. O pipeline CI/CD e os Dockerfiles da aplicação ainda estão pendentes na Fase 5.
 
 O frontend faz proxy de `/api` para o backend (porta configurada no `vite.config.ts`).
 
-8. **Login padrão (ambiente de desenvolvimento)**
+8. **Login padrão (exclusivo para desenvolvimento)**
 
-- **Usuário**: `admin`
-- **Senha**: `admin123`
-
-Um usuário ADMIN é criado automaticamente pelo `DataInitializer` na primeira execução.
+- **Usuário**: `admin` / **Senha**: definida em `ADMIN_SEED_PASSWORD` (env) — o seed com senha padrão `admin123` só é ativado no profile `dev`.
+- O `DataInitializer` cria usuários ADMIN, TI, RH, FINANCEIRO, SUPERVISOR e VISUALIZADOR na primeira execução (somente em dev; em produção use migração/IDP com senhas fortes).
 
 ## 📚 Documentação da API
 
@@ -308,13 +276,16 @@ gestao-rh-financeiro/
 - ✅ Configuração de Metas (Ex: Meta Diária de 1400)
 - ✅ Substituição dos Mocks Recharts para `TanStack Query`
 
-### Fase 5: Módulo de Auditoria, Configurações e Implantação (Semanas 33-36) ✅
+### Fase 5: Módulo de Auditoria, Configurações e Implantação (Semanas 33-36) 🚧
 - ✅ Entidade e Tabela `ParametroSistema` (Chaves Dinâmicas)
 - ✅ Injeção Dinâmica da `META_VENDAS_DIARIA` em Tela de Vendas
 - ✅ Injeção de Interceptador AOP (`@Audited`) nas Rotas de Delete e Criar
 - ✅ Painel de **Settings.tsx** (Usuários, Auditoria de Logs Seguros, e Parâmetros Front-End)
-- ✅ Testes com usuários reais finalizados
-- ✅ Deploy finalizado e Build Validado no React+Vite
+- ✅ Segurança P0/P1: CORS restrito, Actuator/Swagger protegidos, secrets obrigatórios (JWT/Jasypt), refresh token validado, seed endurecido
+- ✅ Testes unitários backend (JUnit 5 + Mockito): cálculo de rescisão, regras de comissão, JWT provider
+- ⏳ Pendente: testes de integração com Testcontainers, Vitest + RTL no frontend, Dockerfile da app + CI/CD, reativação PMD/SpotBugs/Checkstyle
+- ~~Testes com usuários reais finalizados~~ (não confirmado — cobertura ainda parcial)
+- ~~Deploy finalizado~~ (não realizado — sem Dockerfile da aplicação nem pipeline CI)
 
 ## 🔒 Segurança
 
@@ -377,33 +348,28 @@ Para dúvidas ou suporte, entre em contato com a equipe de desenvolvimento.
 - **Dashboard Financeiro**: Widgets em tempo real e KPIs
 - **Relatórios Gerenciais**: Análises e exportações
 
-### Módulo Testes ✅
-- **Testes com Usuários**: Validação com perfis diferentes
-- **Documentação**: Guias, manuais e vídeos tutoriais
-- **Deploy**: Sistema completo de implantação
-- **Checklist**: Validação de qualidade e performance
+### Módulo Testes 🚧 (em andamento)
+- **Testes unitários backend**: JUnit 5 + Mockito — cálculo de rescisão, regras de comissão, JWT provider (`src/test/java`)
+- ⏳ Pendente: testes de integração com Testcontainers, Vitest + React Testing Library no frontend, meta de cobertura > 70%
+- ~~Deploy / sistema completo de implantação~~ (não realizado — Dockerfile da app e CI ausentes)
 
-### Frontend Moderno ✅
+### Frontend Moderno ✅ (parcial)
 - **React 19 + TypeScript**: Interface moderna e type-safe
 - **Shadcn/UI + Tailwind**: Design system profissional
-- **Navegação Completa**: Sidebar funcional com routing
-- **Dashboards Inteligentes**: Widgets em tempo real
-- **Gamificação**: Rankings e conquistas para comissões
-- **Escalas Interativas**: Gantt Chart com drag-and-drop
-- **Pipeline Kanban**: Processo de admissão digital
-- **Simulador de Folha**: Cálculos em tempo real
-- **Sistema de Testes**: Validação completa com usuários
+- **Navegação Completa**: Sidebar funcional com routing (inclui Documentos, Avaliações, Mural, Benefícios, Ponto, Escalas, Admissão/Demissão, Comissões e Relatórios)
+- **Dashboards Inteligentes**: Indicadores reais via `/rh/dashboard/indicadores`
+- **Simulador de Comissão e Apuração Mensal**: tela Comissoes.tsx integrada ao backend
+- **Central de Relatórios**: exportação CSV e PDF (provisões, turnover/absenteísmo, DRE)
 - **Modais Interativos**: Popup de detalhes dos funcionários
-- **Formulários Avançados**: 45+ campos com validação
-- **Interface Responsiva**: Funciona em todos os dispositivos
-- **Acesso Multi-dispositivo**: Local, remoto e externo
+- **Formulários Avançados**: validação com Zod + React Hook Form
+- ❌ Não implementados: Gamificação/Kanban de admissão completo, Gantt drag-and-drop de escalas (versão atual é grade semanal), acesso externo "multi-dispositivo" como produto
 
 ### Funcionalidades Técnicas ✅
 - **Autenticação**: JWT com refresh token
 - **Autorização**: RBAC com roles (ADMIN, RH, FINANCEIRO, etc.)
 - **Segurança**: Jasypt para dados sensíveis
-- **Cache**: Redis para performance
-- **Mensageria**: RabbitMQ para processos assíncronos
+- **Cache**: Redis para performance (uso atual: `@Cacheable` em parâmetros de sistema)
+- **Mensageria**: RabbitMQ disponível no docker-compose ⚠️ *sem producer/consumer implementados no código (decisão pendente: integrar ou remover)*
 - **Agendamento**: Tarefas automáticas com @Scheduled
 - **Relatórios**: JasperReports para PDFs
 - **Documentação**: OpenAPI/Swagger integrado
@@ -412,39 +378,39 @@ Para dúvidas ou suporte, entre em contato com a equipe de desenvolvimento.
 
 ## 🌐 Acesso ao Sistema
 
-### 📋 Resumo de Acesso
+### 📋 Resumo de Acesso (desenvolvimento local)
 
-| Tipo | URL | Dispositivos | Requisitos |
-|------|-----|--------------|------------|
-| 🏠 **Local** | http://localhost:3000 | PC Principal | Sistema instalado |
-| 📱 **Remoto** | http://192.168.0.5:3000 | Mesma rede Wi-Fi | Conectado à mesma rede |
-| 🌐 **Externo** | https://connotative-unaccustomedly-deadra.ngrok-free.dev | Qualquer lugar | NGROK configurado ✅ |
+| Tipo | URL | Requisitos |
+|------|-----|------------|
+| 🏠 **Interface web** | http://localhost:3007 | `npm run dev` no frontend |
+| ⚙️ **API** | http://localhost:8080 | `mvn spring-boot:run` + Postgres via compose |
 
-### 🚀 Configuração Rápida (NGROK)
-
-```bash
-# 1. Criar conta: https://dashboard.ngrok.com/signup
-# 2. Obter token: https://dashboard.ngrok.com/get-started/your-authtoken
-# 3. Configurar:
-cd frontend
-.\ngrok.exe config add-authtoken SEU_TOKEN
-# 4. Iniciar túnel:
-.\ngrok.exe http 3000
-# 5. Usar URL: https://connotative-unaccustomedly-deadra.ngrok-free.dev
-```
+> Acesso externo (ngrok/VPN/port forwarding) é prática opcional de laboratório e não faz parte do produto. Ver a seção "Acesso Externo" acima para a nota de segurança.
 
 ### 📱 Funcionalidades Disponíveis
 
 - ✅ **Cadastro Completo**: 45+ campos para funcionários
 - ✅ **Edição e Exclusão**: CRUD completo
 - ✅ **Modal de Detalhes**: Clique no nome para visualizar
-- ✅ **Navegação**: Sidebar com todos os módulos
+- ✅ **Navegação**: Sidebar com todos os módulos (RH, Financeiro, Ponto/Escalas, Comissões, Relatórios)
 - ✅ **Responsivo**: Funciona em celulares, tablets e desktop
-- ✅ **Acesso Global**: Via NGROK de qualquer lugar
 
 ---
 
-**Versão**: 1.0.0-LTS (Final Production)  
-**Última atualização**: Março 2026  
-**Status**: Fase 5 (Módulo de Auditoria, Parameters e Dashboard Configs) 100% Concluída ✅ | Homologado.  
-**Acesso**: Local, remoto e externo (Via NGROK) configurados e Estáveis 🌐
+## ⚠️ Pendências Conhecidas (Fase 5 e backlog)
+
+1. **CI/CD e Docker**: sem Dockerfile da aplicação, sem serviços app/frontend no compose, sem pipeline (.github/workflows ausente).
+2. **Testes**: Testcontainers (integração), Vitest + RTL (frontend); cobertura atual abaixo da meta de 70%.
+3. **Qualidade estática**: PMD/SpotBugs comentados no pom.xml; Checkstyle configurado mas não integrado ao build.
+4. **Dead code**: `test.py` e `auth-design-placeholder.ipynb` ainda presentes na raiz.
+5. **RabbitMQ**: decidir integrar (notificações/metas) ou remover do compose.
+6. **Placeholders restantes**: alguns indicadores de analytics ainda estimados.
+7. **Backlog call center**: WebSocket (metas/documentos a vencer), pausas NR-17, exportação AFD/AFDT (Portaria 671), vinculação em lote de escalas, conclusão do módulo de avaliação de desempenho.
+8. **docs/ROADMAP.md**: desatualizado — precisa ser reconciliado com o status real acima.
+
+---
+
+**Versão**: 1.0.0-SNAPSHOT  
+**Última atualização**: Outubro 2026  
+**Status**: Fases 1–4 concluídas ✅ | Fase 5 em andamento 🚧 (segurança P0/P1 e testes unitários backend entregues; pendentes: CI/CD, Dockerfile da app, testes frontend, Testcontainers).  
+**Acesso**: Local (Vite na porta 3007) — deploy externo ainda não configurado.

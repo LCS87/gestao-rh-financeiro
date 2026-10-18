@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EquipeService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.application</a> &gt; <span class="el_source">EquipeService.java</span></div><h1>EquipeService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.application;
+
+import br.com.callcenter.core.exception.ResourceNotFoundException;
+import br.com.callcenter.modulorh.api.dto.EquipeDto;
+import br.com.callcenter.modulorh.domain.entity.Equipe;
+import br.com.callcenter.modulorh.infrastructure.repository.EquipeRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class EquipeService {
+
+    private final EquipeRepository equipeRepository;
+
+<span class="nc" id="L19">    public EquipeService(EquipeRepository equipeRepository) {</span>
+<span class="nc" id="L20">        this.equipeRepository = equipeRepository;</span>
+<span class="nc" id="L21">    }</span>
+
+    public List&lt;Equipe&gt; listarTodos() {
+<span class="nc" id="L24">        return equipeRepository.findAll();</span>
+    }
+
+    public Equipe buscarPorId(UUID id) {
+<span class="nc" id="L28">        return equipeRepository.findById(id)</span>
+<span class="nc" id="L29">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Equipe não encontrada&quot;));</span>
+    }
+
+    public Equipe criar(EquipeDto dto) {
+<span class="nc" id="L33">        Equipe equipe = Equipe.builder()</span>
+<span class="nc" id="L34">                .nome(dto.getNome())</span>
+<span class="nc" id="L35">                .supervisorId(dto.getSupervisorId())</span>
+<span class="nc" id="L36">                .departamentoId(dto.getDepartamentoId())</span>
+<span class="nc" id="L37">                .build();</span>
+<span class="nc" id="L38">        return equipeRepository.save(equipe);</span>
+    }
+
+    public Equipe atualizar(UUID id, EquipeDto dto) {
+<span class="nc" id="L42">        Equipe existente = buscarPorId(id);</span>
+<span class="nc" id="L43">        existente.setNome(dto.getNome());</span>
+<span class="nc" id="L44">        existente.setSupervisorId(dto.getSupervisorId());</span>
+<span class="nc" id="L45">        existente.setDepartamentoId(dto.getDepartamentoId());</span>
+<span class="nc" id="L46">        return equipeRepository.save(existente);</span>
+    }
+
+    public void deletar(UUID id) {
+<span class="nc" id="L50">        Equipe existente = buscarPorId(id);</span>
+<span class="nc" id="L51">        equipeRepository.delete(existente);</span>
+<span class="nc" id="L52">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

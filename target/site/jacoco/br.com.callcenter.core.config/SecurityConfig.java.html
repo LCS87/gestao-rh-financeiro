@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.core.config</a> &gt; <span class="el_source">SecurityConfig.java</span></div><h1>SecurityConfig.java</h1><pre class="source lang-java linenums">package br.com.callcenter.core.config;
+
+import br.com.callcenter.core.security.JwtAuthenticationFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity  // Habilita a aplicação das anotações @PreAuthorize nos controllers
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+<span class="nc" id="L24">    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {</span>
+<span class="nc" id="L25">        this.jwtAuthenticationFilter = jwtAuthenticationFilter;</span>
+<span class="nc" id="L26">    }</span>
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+<span class="nc" id="L30">        http</span>
+<span class="nc" id="L31">            .csrf(csrf -&gt; csrf.disable())</span>
+<span class="nc" id="L32">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="nc" id="L33">            .authorizeHttpRequests(auth -&gt; auth</span>
+                // Autenticação e health check público (para liveness/readiness probes)
+<span class="nc" id="L35">                .requestMatchers(&quot;/auth/login&quot;, &quot;/auth/refresh&quot;, &quot;/actuator/health&quot;, &quot;/actuator/health/**&quot;).permitAll()</span>
+                // Swagger/Actuator administrativos exigem papel TI ou ADMIN
+<span class="nc" id="L37">                .requestMatchers(&quot;/swagger-ui/**&quot;, &quot;/swagger-ui.html&quot;, &quot;/api-docs/**&quot;, &quot;/actuator/**&quot;).hasAnyRole(&quot;TI&quot;, &quot;ADMIN&quot;)</span>
+<span class="nc" id="L38">                .anyRequest().authenticated()</span>
+            )
+<span class="nc" id="L40">            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);</span>
+        
+<span class="nc" id="L42">        return http.build();</span>
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+<span class="nc" id="L47">        return new BCryptPasswordEncoder();</span>
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+<span class="nc" id="L52">        return configuration.getAuthenticationManager();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

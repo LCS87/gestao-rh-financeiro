@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AfastamentoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.application</a> &gt; <span class="el_source">AfastamentoService.java</span></div><h1>AfastamentoService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.application;
+
+import br.com.callcenter.core.exception.ResourceNotFoundException;
+import br.com.callcenter.modulorh.api.dto.AfastamentoDto;
+import br.com.callcenter.modulorh.domain.entity.Afastamento;
+import br.com.callcenter.modulorh.infrastructure.repository.AfastamentoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@Transactional
+public class AfastamentoService {
+
+    private final AfastamentoRepository afastamentoRepository;
+    private final FuncionarioRepository funcionarioRepository;
+
+    public AfastamentoService(AfastamentoRepository afastamentoRepository,
+<span class="nc" id="L22">                              FuncionarioRepository funcionarioRepository) {</span>
+<span class="nc" id="L23">        this.afastamentoRepository = afastamentoRepository;</span>
+<span class="nc" id="L24">        this.funcionarioRepository = funcionarioRepository;</span>
+<span class="nc" id="L25">    }</span>
+
+    public List&lt;Afastamento&gt; listarTodos() {
+<span class="nc" id="L28">        return afastamentoRepository.findAll();</span>
+    }
+
+    public List&lt;Afastamento&gt; listarPorFuncionario(UUID funcionarioId) {
+<span class="nc" id="L32">        funcionarioRepository.findById(funcionarioId)</span>
+<span class="nc" id="L33">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+<span class="nc" id="L34">        return afastamentoRepository.findByFuncionarioIdOrderByDataInicioDesc(funcionarioId);</span>
+    }
+
+    public Afastamento buscarPorId(UUID id) {
+<span class="nc" id="L38">        return afastamentoRepository.findById(id)</span>
+<span class="nc" id="L39">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Afastamento não encontrado&quot;));</span>
+    }
+
+    public Afastamento criar(AfastamentoDto dto) {
+<span class="nc" id="L43">        funcionarioRepository.findById(dto.getFuncionarioId())</span>
+<span class="nc" id="L44">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Funcionário não encontrado&quot;));</span>
+
+<span class="nc" id="L46">        Afastamento afastamento = Afastamento.builder()</span>
+<span class="nc" id="L47">                .funcionarioId(dto.getFuncionarioId())</span>
+<span class="nc" id="L48">                .dataInicio(dto.getDataInicio())</span>
+<span class="nc" id="L49">                .dataFim(dto.getDataFim())</span>
+<span class="nc" id="L50">                .tipo(dto.getTipo())</span>
+<span class="nc" id="L51">                .motivo(dto.getMotivo())</span>
+<span class="nc" id="L52">                .observacoes(dto.getObservacoes())</span>
+<span class="nc" id="L53">                .build();</span>
+<span class="nc" id="L54">        return afastamentoRepository.save(afastamento);</span>
+    }
+
+    public Afastamento atualizar(UUID id, AfastamentoDto dto) {
+<span class="nc" id="L58">        Afastamento existente = buscarPorId(id);</span>
+<span class="nc" id="L59">        existente.setDataInicio(dto.getDataInicio());</span>
+<span class="nc" id="L60">        existente.setDataFim(dto.getDataFim());</span>
+<span class="nc" id="L61">        existente.setTipo(dto.getTipo());</span>
+<span class="nc" id="L62">        existente.setMotivo(dto.getMotivo());</span>
+<span class="nc" id="L63">        existente.setObservacoes(dto.getObservacoes());</span>
+<span class="nc" id="L64">        return afastamentoRepository.save(existente);</span>
+    }
+
+    public void deletar(UUID id) {
+<span class="nc" id="L68">        Afastamento existente = buscarPorId(id);</span>
+<span class="nc" id="L69">        afastamentoRepository.delete(existente);</span>
+<span class="nc" id="L70">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

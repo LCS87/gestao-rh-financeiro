@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnalyticsService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.moduloanalytics.application</a> &gt; <span class="el_source">AnalyticsService.java</span></div><h1>AnalyticsService.java</h1><pre class="source lang-java linenums">package br.com.callcenter.moduloanalytics.application;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.callcenter.moduloanalytics.api.AnalyticsController.AnalyticsDashboardDto;
+import br.com.callcenter.moduloanalytics.domain.entity.AnalyticsIndicator;
+import br.com.callcenter.moduloanalytics.domain.entity.AnalyticsMetric;
+import br.com.callcenter.moduloanalytics.domain.repository.AnalyticsIndicatorRepository;
+import br.com.callcenter.moduloanalytics.domain.repository.AnalyticsMetricRepository;
+import br.com.callcenter.modulorh.domain.entity.Funcionario;
+import br.com.callcenter.modulorh.infrastructure.repository.AfastamentoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.DemissaoRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FeriasRepository;
+import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+<span class="nc" id="L24">@Slf4j</span>
+@Service
+<span class="nc" id="L26">@RequiredArgsConstructor</span>
+public class AnalyticsService {
+
+    private final FuncionarioRepository funcionarioRepository;
+    private final FeriasRepository feriasRepository;
+    private final AfastamentoRepository afastamentoRepository;
+    private final DemissaoRepository demissaoRepository;
+    private final AnalyticsIndicatorRepository analyticsIndicatorRepository;
+    private final AnalyticsMetricRepository analyticsMetricRepository;
+
+    // Atualiza todos os indicadores analytics
+    @Transactional
+    @Scheduled(cron = &quot;0 0 3 * * ?&quot;) // Toda madrugada às 3h
+    public void calcularIndicadoresMensais() {
+<span class="nc" id="L40">        String periodo = YearMonth.now().toString(); // YYYY-MM</span>
+<span class="nc" id="L41">        log.info(&quot;Calculando indicadores analytics para o período: {}&quot;, periodo);</span>
+
+<span class="nc" id="L43">        calcularRotatividade(periodo);</span>
+<span class="nc" id="L44">        calcularAbsenteismo(periodo);</span>
+<span class="nc" id="L45">        calcularCustoPorFuncionario(periodo);</span>
+<span class="nc" id="L46">        calcularTaxaFerias(periodo);</span>
+<span class="nc" id="L47">    }</span>
+
+    // Rotatividade = (Demissões no mês / Funcionários ativos no início do mês) *
+    // 100
+    private void calcularRotatividade(String periodo) {
+<span class="nc" id="L52">        int mes = YearMonth.parse(periodo).getMonthValue();</span>
+<span class="nc" id="L53">        int ano = YearMonth.parse(periodo).getYear();</span>
+
+        // Funcionários ativos no início do mês (data_admissao &lt;= último dia do mês
+        // anterior)
+<span class="nc" id="L57">        LocalDate primeiroDiaMes = YearMonth.parse(periodo).atDay(1);</span>
+<span class="nc" id="L58">        LocalDate ultimoDiaMesAnterior = primeiroDiaMes.minusDays(1);</span>
+<span class="nc" id="L59">        List&lt;Funcionario&gt; funcionariosAtivosInicioMes = funcionarioRepository</span>
+<span class="nc" id="L60">                .findByDataAdmissaoBeforeAndStatus(ultimoDiaMesAnterior, Funcionario.StatusFuncionario.ATIVO);</span>
+
+<span class="nc" id="L62">        int totalFuncionariosInicioMes = (int) funcionarioRepository.countByStatus(Funcionario.StatusFuncionario.ATIVO);</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (totalFuncionariosInicioMes == 0) {</span>
+<span class="nc" id="L64">            salvarIndicator(&quot;rotatividade&quot;, 0.0, periodo, null);</span>
+<span class="nc" id="L65">            return;</span>
+        }
+
+        // Demissões no mês
+<span class="nc" id="L69">        LocalDate primeiroDiaMesAtual = primeiroDiaMes;</span>
+<span class="nc" id="L70">        LocalDate ultimoDiaMesAtual = YearMonth.parse(periodo).atEndOfMonth();</span>
+<span class="nc" id="L71">        List&lt;br.com.callcenter.modulorh.domain.entity.Demissao&gt; demissoesMes = demissaoRepository</span>
+<span class="nc" id="L72">                .findByDataDemissaoBetween(primeiroDiaMesAtual, ultimoDiaMesAtual);</span>
+
+<span class="nc" id="L74">        double rotatividade = (demissoesMes.size() * 1.0 / totalFuncionariosInicioMes) * 100;</span>
+<span class="nc" id="L75">        salvarIndicator(&quot;rotatividade&quot;, rotatividade, periodo, null);</span>
+<span class="nc" id="L76">        log.info(&quot;Rotatividade calculada: {:.2f}%&quot;, rotatividade);</span>
+<span class="nc" id="L77">    }</span>
+
+    // Absenteísmo = (Total de horas/faltas / (Funcionários ativos * dias úteis *
+    // 8h)) * 100
+    private void calcularAbsenteismo(String periodo) {
+<span class="nc" id="L82">        int mes = YearMonth.parse(periodo).getMonthValue();</span>
+<span class="nc" id="L83">        int ano = YearMonth.parse(periodo).getYear();</span>
+
+        // Funcionários ativos no mês
+<span class="nc" id="L86">        List&lt;Funcionario&gt; funcionariosAtivos = funcionarioRepository.findByStatus(Funcionario.StatusFuncionario.ATIVO);</span>
+<span class="nc" id="L87">        int totalFuncionarios = funcionariosAtivos.size();</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (totalFuncionarios == 0) {</span>
+<span class="nc" id="L89">            salvarIndicator(&quot;absenteismo&quot;, 0.0, periodo, null);</span>
+<span class="nc" id="L90">            return;</span>
+        }
+
+        // Contar faltas e afastamentos no mês
+<span class="nc" id="L94">        LocalDate primeiroDia = YearMonth.parse(periodo).atDay(1);</span>
+<span class="nc" id="L95">        LocalDate ultimoDia = YearMonth.parse(periodo).atEndOfMonth();</span>
+
+<span class="nc" id="L97">        long totalAfastamentos = afastamentoRepository.countByDataInicioBetween(primeiroDia, ultimoDia);</span>
+
+        // Cálculo simplificado: assume 8h/dia e 22 dias úteis
+<span class="nc" id="L100">        int diasUteis = 22; // Estimativa média</span>
+<span class="nc" id="L101">        double totalHorasPossiveis = totalFuncionarios * diasUteis * 8.0;</span>
+<span class="nc" id="L102">        double totalHorasFalta = totalAfastamentos * 8.0; // Assume 8h por afastamento/dia</span>
+
+<span class="nc" id="L104">        double absenteismo = (totalHorasFalta / totalHorasPossiveis) * 100;</span>
+<span class="nc" id="L105">        salvarIndicator(&quot;absenteismo&quot;, absenteismo, periodo, null);</span>
+<span class="nc" id="L106">        log.info(&quot;Absenteísmo calculado: {:.2f}%&quot;, absenteismo);</span>
+<span class="nc" id="L107">    }</span>
+
+    // Custo por Funcionário = (Folha de pagamento total do mês) / (Funcionários
+    // ativos)
+    private void calcularCustoPorFuncionario(String periodo) {
+        // Para calcular o custo real, precisaria somar todos os contracheques do mês
+        // Simplificação: usa folha de pagamento processada
+        // Em produção, integrar com FolhaPagamentoService
+
+<span class="nc" id="L116">        List&lt;Funcionario&gt; funcionariosAtivos = funcionarioRepository.findByStatus(Funcionario.StatusFuncionario.ATIVO);</span>
+<span class="nc" id="L117">        int totalFuncionarios = funcionariosAtivos.size();</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (totalFuncionarios == 0) {</span>
+<span class="nc" id="L119">            salvarIndicator(&quot;custo_por_funcionario&quot;, 0.0, periodo, null);</span>
+<span class="nc" id="L120">            return;</span>
+        }
+
+        // Placeholder - em produção, somar salários líquidos da folha
+<span class="nc" id="L124">        double custoTotalFolha = funcionariosAtivos.stream()</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                .mapToDouble(f -&gt; f.getSalarioBase() != null ? f.getSalarioBase() : 0)</span>
+<span class="nc" id="L126">                .sum();</span>
+
+<span class="nc" id="L128">        double custoPorFuncionario = custoTotalFolha / totalFuncionarios;</span>
+<span class="nc" id="L129">        salvarIndicator(&quot;custo_por_funcionario&quot;, custoPorFuncionario, periodo, null);</span>
+<span class="nc" id="L130">        log.info(&quot;Custo por funcionário calculado: R$ {:.2f}&quot;, custoPorFuncionario);</span>
+<span class="nc" id="L131">    }</span>
+
+    // Taxa de Férias = (Funcionários de férias / Funcionários ativos) * 100
+    private void calcularTaxaFerias(String periodo) {
+<span class="nc" id="L135">        List&lt;Funcionario&gt; funcionariosAtivos = funcionarioRepository.findByStatus(Funcionario.StatusFuncionario.ATIVO);</span>
+<span class="nc" id="L136">        int totalFuncionarios = funcionariosAtivos.size();</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (totalFuncionarios == 0) {</span>
+<span class="nc" id="L138">            salvarIndicator(&quot;taxa_ferias&quot;, 0.0, periodo, null);</span>
+<span class="nc" id="L139">            return;</span>
+        }
+
+<span class="nc" id="L142">        LocalDate primeiroDia = YearMonth.parse(periodo).atDay(1);</span>
+<span class="nc" id="L143">        LocalDate ultimoDia = YearMonth.parse(periodo).atEndOfMonth();</span>
+
+        // Funcionários em férias no período (férias iniciaram antes do fim do mês e
+        // terminam após o início)
+<span class="nc" id="L147">        long funcionariosEmFerias = feriasRepository.countByDataInicioBetween(primeiroDia, ultimoDia);</span>
+
+<span class="nc" id="L149">        double taxaFerias = (funcionariosEmFerias * 1.0 / totalFuncionarios) * 100;</span>
+<span class="nc" id="L150">        salvarIndicator(&quot;taxa_ferias&quot;, taxaFerias, periodo, null);</span>
+<span class="nc" id="L151">        log.info(&quot;Taxa de férias calculada: {:.2f}%&quot;, taxaFerias);</span>
+<span class="nc" id="L152">    }</span>
+
+    private void salvarIndicator(String indicador, double valor, String periodo,
+            br.com.callcenter.modulorh.domain.entity.Departamento departamento) {
+<span class="nc" id="L156">        analyticsIndicatorRepository</span>
+<span class="nc" id="L157">                .findByIndicadorAndPeriodoAndDepartamentoId(indicador, periodo,</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                        departamento != null ? departamento.getId() : null)</span>
+<span class="nc" id="L159">                .ifPresentOrElse(</span>
+                        existing -&gt; {
+<span class="nc" id="L161">                            existing.setValor(valor);</span>
+<span class="nc" id="L162">                            analyticsIndicatorRepository.save(existing);</span>
+<span class="nc" id="L163">                        },</span>
+                        () -&gt; {
+<span class="nc" id="L165">                            AnalyticsIndicator indicator = AnalyticsIndicator.builder()</span>
+<span class="nc" id="L166">                                    .indicador(indicador)</span>
+<span class="nc" id="L167">                                    .valor(valor)</span>
+<span class="nc" id="L168">                                    .periodo(periodo)</span>
+<span class="nc" id="L169">                                    .departamento(departamento)</span>
+<span class="nc" id="L170">                                    .build();</span>
+<span class="nc" id="L171">                            analyticsIndicatorRepository.save(indicator);</span>
+<span class="nc" id="L172">                        });</span>
+<span class="nc" id="L173">    }</span>
+
+    // Contar métricas diárias
+    @Transactional
+    @Scheduled(cron = &quot;0 0 4 * * ?&quot;) // Toda madrugada às 4h
+    public void calcularMetricasDiarias() {
+<span class="nc" id="L179">        LocalDate hoje = LocalDate.now();</span>
+<span class="nc" id="L180">        log.info(&quot;Calculando métricas diárias para: {}&quot;, hoje);</span>
+
+<span class="nc" id="L182">        contarAdmissoes(hoje);</span>
+<span class="nc" id="L183">        contarDemissoes(hoje);</span>
+<span class="nc" id="L184">        contarFerias(hoje);</span>
+<span class="nc" id="L185">        contarAfastamentos(hoje);</span>
+<span class="nc" id="L186">    }</span>
+
+    private void contarAdmissoes(LocalDate data) {
+        // Contagem simplificada - em produção, contar por departamento
+<span class="nc" id="L190">        long count = funcionarioRepository.countByDataAdmissao(data);</span>
+<span class="nc" id="L191">        salvarMetrica(&quot;admissoes&quot;, (int) count, data, null);</span>
+<span class="nc" id="L192">    }</span>
+
+    private void contarDemissoes(LocalDate data) {
+        // Placeholder - em produção, contar demissões com data_demissao
+<span class="nc" id="L196">        long count = demissaoRepository.countByDataDemissao(data);</span>
+<span class="nc" id="L197">        salvarMetrica(&quot;demissoes&quot;, (int) count, data, null);</span>
+<span class="nc" id="L198">    }</span>
+
+    private void contarFerias(LocalDate data) {
+<span class="nc" id="L201">        long count = feriasRepository.countByDataInicio(data);</span>
+<span class="nc" id="L202">        salvarMetrica(&quot;ferias&quot;, (int) count, data, null);</span>
+<span class="nc" id="L203">    }</span>
+
+    private void contarAfastamentos(LocalDate data) {
+<span class="nc" id="L206">        long count = afastamentoRepository.countByDataInicio(data);</span>
+<span class="nc" id="L207">        salvarMetrica(&quot;afastamentos&quot;, (int) count, data, null);</span>
+<span class="nc" id="L208">    }</span>
+
+    private void salvarMetrica(String metrica, int valor, LocalDate data,
+            br.com.callcenter.modulorh.domain.entity.Departamento departamento) {
+<span class="nc" id="L212">        AnalyticsMetric metric = AnalyticsMetric.builder()</span>
+<span class="nc" id="L213">                .metrica(metrica)</span>
+<span class="nc" id="L214">                .valor(valor)</span>
+<span class="nc" id="L215">                .data(data)</span>
+<span class="nc" id="L216">                .departamento(departamento)</span>
+<span class="nc" id="L217">                .build();</span>
+<span class="nc" id="L218">        analyticsMetricRepository.save(metric);</span>
+<span class="nc" id="L219">    }</span>
+
+    // Métodos públicos para os endpoints do controller
+    public List&lt;AnalyticsIndicator&gt; getIndicatorsByPeriod(String periodo) {
+<span class="nc" id="L223">        return analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc" id="L224">                .filter(i -&gt; i.getPeriodo().equals(periodo))</span>
+<span class="nc" id="L225">                .toList();</span>
+    }
+
+    public List&lt;AnalyticsIndicator&gt; getIndicatorsByPeriodAndIndicator(String periodo, String indicador) {
+<span class="nc" id="L229">        return analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc bnc" id="L230" title="All 4 branches missed.">                .filter(i -&gt; i.getPeriodo().equals(periodo) &amp;&amp; i.getIndicador().equals(indicador))</span>
+<span class="nc" id="L231">                .toList();</span>
+    }
+
+    public List&lt;AnalyticsIndicator&gt; getRecentIndicators(String indicador, String periodoInicio, String periodoFim) {
+<span class="nc" id="L235">        return analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                .filter(i -&gt; i.getIndicador().equals(indicador) &amp;&amp;</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                        i.getPeriodo().compareTo(periodoInicio) &gt;= 0 &amp;&amp;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                        i.getPeriodo().compareTo(periodoFim) &lt;= 0)</span>
+<span class="nc" id="L239">                .toList();</span>
+    }
+
+    public List&lt;AnalyticsMetric&gt; getMetricsByPeriod(LocalDate inicio, LocalDate fim) {
+<span class="nc" id="L243">        return analyticsMetricRepository.findAll().stream()</span>
+<span class="nc bnc" id="L244" title="All 4 branches missed.">                .filter(m -&gt; !m.getData().isBefore(inicio) &amp;&amp; !m.getData().isAfter(fim))</span>
+<span class="nc" id="L245">                .toList();</span>
+    }
+
+    public AnalyticsDashboardDto getDashboardSummary() {
+<span class="nc" id="L249">        AnalyticsDashboardDto dto = new AnalyticsDashboardDto();</span>
+
+        // Carregar indicadores mais recentes do banco
+<span class="nc" id="L252">        String periodoAtual = YearMonth.now().toString();</span>
+<span class="nc" id="L253">        String periodoAnterior = YearMonth.now().minusMonths(1).toString();</span>
+
+        // Carregar métricas recentes
+<span class="nc" id="L256">        LocalDate hoje = LocalDate.now();</span>
+<span class="nc" id="L257">        LocalDate seteDiasAtras = hoje.minusDays(7);</span>
+<span class="nc" id="L258">        List&lt;AnalyticsMetric&gt; metricsRecentes = analyticsMetricRepository.findAll().stream()</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                .filter(m -&gt; !m.getData().isBefore(seteDiasAtras))</span>
+<span class="nc" id="L260">                .toList();</span>
+
+        // Calcular totais
+<span class="nc" id="L263">        long totalFuncionarios = funcionarioRepository.countAll();</span>
+<span class="nc" id="L264">        int funcionariosAtivos = (int) funcionarioRepository.countByStatus(Funcionario.StatusFuncionario.ATIVO);</span>
+<span class="nc" id="L265">        int funcionariosInativos = (int) (totalFuncionarios - funcionariosAtivos);</span>
+
+        // Buscar indicadores mais recentes
+<span class="nc" id="L268">        AnalyticsIndicator lastRotatividade = analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc" id="L269">                .filter(i -&gt; i.getIndicador().equals(&quot;rotatividade&quot;))</span>
+<span class="nc" id="L270">                .findFirst()</span>
+<span class="nc" id="L271">                .orElse(null);</span>
+
+<span class="nc" id="L273">        AnalyticsIndicator lastAbsenteismo = analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc" id="L274">                .filter(i -&gt; i.getIndicador().equals(&quot;absenteismo&quot;))</span>
+<span class="nc" id="L275">                .findFirst()</span>
+<span class="nc" id="L276">                .orElse(null);</span>
+
+<span class="nc" id="L278">        AnalyticsIndicator lastCusto = analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc" id="L279">                .filter(i -&gt; i.getIndicador().equals(&quot;custo_por_funcionario&quot;))</span>
+<span class="nc" id="L280">                .findFirst()</span>
+<span class="nc" id="L281">                .orElse(null);</span>
+
+<span class="nc" id="L283">        AnalyticsIndicator lastFerias = analyticsIndicatorRepository.findAll().stream()</span>
+<span class="nc" id="L284">                .filter(i -&gt; i.getIndicador().equals(&quot;taxa_ferias&quot;))</span>
+<span class="nc" id="L285">                .findFirst()</span>
+<span class="nc" id="L286">                .orElse(null);</span>
+
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        dto.setRotatividade(lastRotatividade != null ? lastRotatividade.getValor() : 0.0);</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        dto.setAbsenteismo(lastAbsenteismo != null ? lastAbsenteismo.getValor() : 0.0);</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">        dto.setCustoPorFuncionario(lastCusto != null ? lastCusto.getValor() : 0.0);</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">        dto.setTaxaFerias(lastFerias != null ? lastFerias.getValor() : 0.0);</span>
+<span class="nc" id="L292">        dto.setTotalFuncionarios((int) totalFuncionarios);</span>
+<span class="nc" id="L293">        dto.setFuncionariosAtivos(funcionariosAtivos);</span>
+<span class="nc" id="L294">        dto.setFuncionariosInativos(funcionariosInativos);</span>
+
+<span class="nc" id="L296">        return dto;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

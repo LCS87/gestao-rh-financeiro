@@ -1,0 +1,3 @@
+br/com/callcenter/core/security/JwtTokenProviderTest.class
+br/com/callcenter/modulo_comissoes/domain/entity/RegraComissaoTest.class
+br/com/callcenter/modulorh/application/CalculoRescisaoServiceTest.class

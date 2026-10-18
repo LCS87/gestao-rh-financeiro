@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PlanoDesenvolvimentoIndividual.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Gestão RH e Financeiro - Call Center</a> &gt; <a href="index.source.html" class="el_package">br.com.callcenter.modulorh.domain.entity</a> &gt; <span class="el_source">PlanoDesenvolvimentoIndividual.java</span></div><h1>PlanoDesenvolvimentoIndividual.java</h1><pre class="source lang-java linenums">package br.com.callcenter.modulorh.domain.entity;
+
+import br.com.callcenter.modulorh.domain.enums.StatusPDI;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = &quot;planos_desenvolvimento_individual&quot;)
+<span class="nc bnc" id="L17" title="All 118 branches missed.">@Data</span>
+<span class="nc" id="L18">@NoArgsConstructor</span>
+<span class="nc" id="L19">@AllArgsConstructor</span>
+public class PlanoDesenvolvimentoIndividual {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+<span class="nc" id="L24">    private UUID id;</span>
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;avaliacao_id&quot;, nullable = false)
+<span class="nc" id="L28">    private AvaliacaoDesempenho avaliacao;</span>
+
+    @Column(nullable = false, length = 200)
+<span class="nc" id="L31">    private String titulo;</span>
+
+    @Column(length = 2000)
+<span class="nc" id="L34">    private String descricao;</span>
+
+<span class="nc" id="L36">    @Enumerated(EnumType.STRING)</span>
+    @Column(nullable = false, length = 50)
+<span class="nc" id="L38">    private StatusPDI status = StatusPDI.RASCUNHO;</span>
+
+    @Column(name = &quot;data_inicio&quot;, nullable = false)
+<span class="nc" id="L41">    private LocalDate dataInicio;</span>
+
+    @Column(name = &quot;data_termino_previsto&quot;, nullable = false)
+<span class="nc" id="L44">    private LocalDate dataTerminoPrevisto;</span>
+
+    @Column(name = &quot;data_termino_real&quot;)
+<span class="nc" id="L47">    private LocalDate dataTerminoReal;</span>
+
+<span class="nc" id="L49">    @Column(name = &quot;percentual_conclusao&quot;, precision = 5, scale = 2)</span>
+<span class="nc" id="L50">    private Double percentualConclusao = 0.0;</span>
+
+<span class="nc" id="L52">    @Column(name = &quot;data_criacao&quot;, nullable = false)</span>
+<span class="nc" id="L53">    private LocalDateTime dataCriacao = LocalDateTime.now();</span>
+
+    @Column(name = &quot;data_atualizacao&quot;)
+<span class="nc" id="L56">    private LocalDateTime dataAtualizacao;</span>
+
+    @Column(name = &quot;data_aprovacao&quot;)
+<span class="nc" id="L59">    private LocalDateTime dataAprovacao;</span>
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;aprovador_id&quot;)
+<span class="nc" id="L63">    private Funcionario aprovador;</span>
+
+<span class="nc" id="L65">    @OneToMany(mappedBy = &quot;planoDesenvolvimento&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+<span class="nc" id="L66">    private List&lt;MetaPDI&gt; metas = new ArrayList&lt;&gt;();</span>
+
+    @PreUpdate
+    public void preUpdate() {
+<span class="nc" id="L70">        this.dataAtualizacao = LocalDateTime.now();</span>
+<span class="nc" id="L71">    }</span>
+
+    // Construtor auxiliar
+    public PlanoDesenvolvimentoIndividual(AvaliacaoDesempenho avaliacao, String titulo, 
+<span class="nc" id="L75">                                         LocalDate dataInicio, LocalDate dataTerminoPrevisto) {</span>
+<span class="nc" id="L76">        this.avaliacao = avaliacao;</span>
+<span class="nc" id="L77">        this.titulo = titulo;</span>
+<span class="nc" id="L78">        this.dataInicio = dataInicio;</span>
+<span class="nc" id="L79">        this.dataTerminoPrevisto = dataTerminoPrevisto;</span>
+<span class="nc" id="L80">        this.status = StatusPDI.RASCUNHO;</span>
+<span class="nc" id="L81">        this.percentualConclusao = 0.0;</span>
+<span class="nc" id="L82">        this.dataCriacao = LocalDateTime.now();</span>
+<span class="nc" id="L83">    }</span>
+
+    // Métodos auxiliares
+    public void adicionarMeta(String descricao, LocalDate dataPrevistaConclusao, Integer peso) {
+<span class="nc" id="L87">        MetaPDI meta = new MetaPDI(this, descricao, dataPrevistaConclusao, peso);</span>
+<span class="nc" id="L88">        this.metas.add(meta);</span>
+<span class="nc" id="L89">    }</span>
+
+    public void calcularPercentualConclusao() {
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        if (metas == null || metas.isEmpty()) {</span>
+<span class="nc" id="L93">            this.percentualConclusao = 0.0;</span>
+<span class="nc" id="L94">            return;</span>
+        }
+
+<span class="nc" id="L97">        double totalPeso = 0.0;</span>
+<span class="nc" id="L98">        double concluidoPeso = 0.0;</span>
+
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (MetaPDI meta : metas) {</span>
+<span class="nc" id="L101">            totalPeso += meta.getPeso();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (meta.isConcluida()) {</span>
+<span class="nc" id="L103">                concluidoPeso += meta.getPeso() * (meta.getPercentualConclusao() / 100.0);</span>
+            }
+<span class="nc" id="L105">        }</span>
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (totalPeso &gt; 0) {</span>
+<span class="nc" id="L108">            this.percentualConclusao = (concluidoPeso / totalPeso) * 100.0;</span>
+        }
+<span class="nc" id="L110">    }</span>
+
+    public boolean isConcluido() {
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        return status == StatusPDI.CONCLUIDO;</span>
+    }
+
+    public boolean isEmAndamento() {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        return status == StatusPDI.EM_ANDAMENTO;</span>
+    }
+
+    public boolean isAtrasado() {
+<span class="nc" id="L121">        LocalDate hoje = LocalDate.now();</span>
+<span class="nc bnc" id="L122" title="All 4 branches missed.">        return !isConcluido() &amp;&amp; hoje.isAfter(dataTerminoPrevisto);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

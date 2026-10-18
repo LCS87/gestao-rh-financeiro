@@ -3,14 +3,16 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   useEmployees,
   useRegistrosPonto,
-  useCalcularHorasPonto,
+  useCalcularHorasPontoDetalhado,
   useRegistrarEntrada,
   useRegistrarSaida,
   useSalvarPontoCompleto,
+  useRegistrarPausaNR17,
+  baixarAFD,
 } from '../hooks/useApi';
 import { PageLoading } from '../components/Layout';
 import { useToast } from '../components/Toast';
-import { Clock, LogIn, LogOut, Timer, Save } from 'lucide-react';
+import { Clock, LogIn, LogOut, Timer, Save, Coffee, FileDown } from 'lucide-react';
 
 const hoje = () => new Date().toISOString().slice(0, 10);
 const inicioMes = () => `${new Date().toISOString().slice(0, 7)}-01`;
@@ -43,7 +45,8 @@ export function Ponto() {
 
   const { data: employees, isLoading: loadingEmp } = useEmployees();
   const { data: registros, isLoading } = useRegistrosPonto(funcionarioId || undefined, inicio, fim);
-  const { data: resumo } = useCalcularHorasPonto(funcionarioId || undefined, inicio, fim);
+  const { data: resumo } = useCalcularHorasPontoDetalhado(funcionarioId || undefined, inicio, fim);
+  const pausaNr17 = useRegistrarPausaNR17();
 
   const registrarEntrada = useRegistrarEntrada();
   const registrarSaida = useRegistrarSaida();
@@ -167,7 +170,7 @@ export function Ponto() {
 
       {/* Totalizadores do período */}
       {funcionarioId && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 text-slate-400 text-sm">
               <Timer className="w-4 h-4" /> Horas Normais
@@ -176,9 +179,15 @@ export function Ponto() {
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 text-slate-400 text-sm">
-              <Timer className="w-4 h-4" /> Horas Extras
+              <Timer className="w-4 h-4" /> Extras 50%
             </div>
-            <p className="text-2xl font-bold text-amber-400 mt-1">{fmtHs(resumo?.horasExtras)}</p>
+            <p className="text-2xl font-bold text-amber-400 mt-1">{fmtHs(resumo?.horasExtras50)}</p>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <Timer className="w-4 h-4" /> Extras 100%
+            </div>
+            <p className="text-2xl font-bold text-orange-400 mt-1">{fmtHs(resumo?.horasExtras100)}</p>
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 text-slate-400 text-sm">
@@ -186,8 +195,55 @@ export function Ponto() {
             </div>
             <p className="text-2xl font-bold text-indigo-400 mt-1">{fmtHs(resumo?.totalHoras)}</p>
           </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <FileDown className="w-4 h-4" /> Portaria 671
+            </div>
+            <button
+              onClick={() => baixarAFD(funcionarioId, inicio, fim)
+                .then(() => showToast('AFD exportado com sucesso.', 'success'))
+                .catch(() => showToast('Falha ao exportar AFD.', 'error'))}
+              className="mt-2 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Exportar AFD
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Pausas NR-17 (teleatendimento) */}
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <div className="flex items-center gap-2 text-slate-300 font-semibold mb-1">
+          <Coffee className="w-4 h-4 text-teal-400" /> Pausas NR-17 (Operador de Teleatendimento)
+        </div>
+        <p className="text-xs text-slate-500 mb-3">
+          Pausa-descanso de 10 min a cada 50 min trabalhados e pausa-lanche de até 20 min diários.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            disabled={!funcionarioId || pausaNr17.isPending}
+            onClick={() => pausaNr17.mutate(
+              { funcionarioId, tipo: 'DESCANSO_10MIN' },
+              { onSuccess: () => showToast('Pausa-descanso NR-17 registrada.', 'success'),
+                onError: () => showToast('Falha ao registrar pausa.', 'error') }
+            )}
+            className="bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Iniciar Pausa Descanso (10 min)
+          </button>
+          <button
+            disabled={!funcionarioId || pausaNr17.isPending}
+            onClick={() => pausaNr17.mutate(
+              { funcionarioId, tipo: 'LANCHE_20MIN' },
+              { onSuccess: () => showToast('Pausa-lanche NR-17 registrada.', 'success'),
+                onError: () => showToast('Falha ao registrar pausa.', 'error') }
+            )}
+            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            Registrar Pausa Lanche (20 min)
+          </button>
+        </div>
+      </div>
 
       {/* Espelho de ponto */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">

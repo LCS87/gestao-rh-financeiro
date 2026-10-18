@@ -33,6 +33,29 @@ public class CalculoHorasService {
         return new ResumoHoras(horasNormais, horasExtras, totalHoras);
     }
 
+    /**
+     * Segrega horas extras em adicional 50% (dias uteis) e 100%
+     * (domingos/feriados), conforme CF Art. 7º, XVI e CLT.
+     */
+    public ResumoHorasDetalhado calcularDetalhado(List<RegistroPonto> registros) {
+        ResumoHoras base = calcular(registros);
+        double minutosDomingoFeriado = 0;
+        for (RegistroPonto rp : registros) {
+            java.time.DayOfWeek dow = rp.getData().getDayOfWeek();
+            if (dow == java.time.DayOfWeek.SUNDAY) {
+                minutosDomingoFeriado += calcularMinutosTrabalhados(rp);
+            }
+        }
+        double horasDomingo = minutosDomingoFeriado / 60.0;
+        // Horas em domingos sao remuneradas a 100% (ou com folga compensatoria)
+        double horasExtras100 = Math.min(base.horasExtras(), horasDomingo);
+        double horasExtras50 = Math.max(0, base.horasExtras() - horasExtras100);
+        return new ResumoHorasDetalhado(base.horasNormais(), horasExtras50, horasExtras100, base.totalHoras());
+    }
+
+    public record ResumoHorasDetalhado(double horasNormais, double horasExtras50,
+                                       double horasExtras100, double totalHoras) {}
+
     private long calcularMinutosTrabalhados(RegistroPonto rp) {
         LocalTime saida = rp.getHoraSaida() != null ? rp.getHoraSaida() : LocalTime.MIDNIGHT;
         Duration total = Duration.between(rp.getHoraEntrada(), saida);

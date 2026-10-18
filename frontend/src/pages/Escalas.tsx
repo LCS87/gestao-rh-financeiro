@@ -5,6 +5,8 @@ import {
   useCriarEscala,
   useAtualizarEscala,
   useDeletarEscala,
+  useEmployees,
+  useVincularEscalaLote,
 } from '../hooks/useApi';
 import { PageLoading } from '../components/Layout';
 import { useToast } from '../components/Toast';
@@ -45,8 +47,11 @@ export function Escalas() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<EscalaForm>(FORM_VAZIO);
   const [escalaSelecionada, setEscalaSelecionada] = useState<string>('');
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
 
   const { data: escalas, isLoading } = useEscalas();
+  const { data: funcionarios } = useEmployees();
+  const vincularLote = useVincularEscalaLote();
   const criarEscala = useCriarEscala();
   const atualizarEscala = useAtualizarEscala();
   const deletarEscala = useDeletarEscala();

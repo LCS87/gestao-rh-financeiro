@@ -1,6 +1,7 @@
 package br.com.callcenter.modulorh.api;
 
 import br.com.callcenter.modulorh.api.dto.EscalaDto;
+import br.com.callcenter.modulorh.api.dto.VinculoEscalaLoteRequest;
 import br.com.callcenter.modulorh.application.EscalaService;
 import br.com.callcenter.modulorh.domain.entity.Escala;
 import jakarta.validation.Valid;
@@ -45,6 +46,18 @@ public class EscalaController {
     @PreAuthorize("hasAnyRole('ADMIN','RH')")
     public ResponseEntity<Escala> atualizar(@PathVariable UUID id, @Valid @RequestBody EscalaDto dto) {
         return ResponseEntity.ok(escalaService.atualizar(id, dto));
+    }
+
+    /**
+     * Vincula uma lista de funcionários a uma escala em lote
+     * (remanejamento de equipe inteira - 6x1, 12x36, comercial).
+     */
+    @PostMapping("/vincular-lote")
+    @PreAuthorize("hasAnyRole('ADMIN','RH','SUPERVISOR')")
+    public ResponseEntity<Integer> vincularLote(@Valid @RequestBody VinculoEscalaLoteRequest request) {
+        int atualizados = escalaService.vincularFuncionariosEmLote(
+                request.escalaId(), request.funcionarioIds());
+        return ResponseEntity.ok(atualizados);
     }
 
     @DeleteMapping("/{id}")

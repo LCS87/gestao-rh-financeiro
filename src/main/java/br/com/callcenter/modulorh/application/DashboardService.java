@@ -3,6 +3,7 @@ package br.com.callcenter.modulorh.application;
 import br.com.callcenter.modulorh.domain.entity.Funcionario;
 import br.com.callcenter.modulorh.infrastructure.repository.DemissaoRepository;
 import br.com.callcenter.modulorh.infrastructure.repository.FuncionarioRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class DashboardService {
         this.documentoService = documentoService;
     }
 
+    @Cacheable(value = "dashboard-indicadores")
     public Map<String, Object> obterIndicadores() {
         Map<String, Object> map = new HashMap<>();
         List<Funcionario> todos = funcionarioRepository.findAll();
